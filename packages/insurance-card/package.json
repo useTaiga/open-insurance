@@ -12,6 +12,7 @@
     "./stedi": "./src/stedi.ts"
   },
   "scripts": {
+    "example": "bun examples/issuer.ts",
     "generate:assets": "bun scripts/generate-assets.ts",
     "generate:stedi": "bun scripts/generate-stedi.ts",
     "insurance-card": "bun src/cli.ts",

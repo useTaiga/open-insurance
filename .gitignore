@@ -9,5 +9,6 @@ __pycache__/
 *.p12
 *.p8
 *.sqlite*
+*.tgz
 captures/
 private/

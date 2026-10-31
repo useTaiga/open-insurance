@@ -16,7 +16,6 @@ jobs:
         with:
           python-version: "3.12"
       - run: bun install --frozen-lockfile
-      - run: bun run test
-      - run: bun run typecheck
+      - run: bun run check
       - run: bun run reader:setup
       - run: bun run reader test

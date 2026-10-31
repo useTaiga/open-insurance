@@ -1,10 +1,14 @@
 {
+  "bugs": {
+    "url": "https://github.com/useTaiga/open-insurance/issues"
+  },
   "dependencies": {
     "ajv": "^8.17.1",
     "passkit-generator": "^3.5.5",
     "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
+  "description": "Open-source Wallet insurance intake SDK and experimental NFC reader, created by Taiga.",
   "exports": {
     ".": "./packages/insurance-card/src/index.ts",
     "./sqlite": "./packages/insurance-card/src/sqlite.ts",
@@ -13,14 +17,32 @@
   "files": [
     "packages/insurance-card/src",
     "packages/insurance-card/assets",
+    "packages/insurance-card/examples",
+    "docs",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
     "THIRD_PARTY.md"
+  ],
+  "homepage": "https://github.com/useTaiga/open-insurance#readme",
+  "keywords": [
+    "insurance",
+    "apple-wallet",
+    "nfc",
+    "eligibility",
+    "stedi"
   ],
   "license": "MIT",
   "name": "open-insurance",
   "packageManager": "bun@1.4.4",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/useTaiga/open-insurance.git"
+  },
   "scripts": {
+    "check": "bun run test && bun run typecheck && bun run example",
     "dev": "bun run --cwd apps/insurance-card-demo dev",
+    "example": "bun packages/insurance-card/examples/issuer.ts",
     "reader": "bun run --cwd apps/insurance-card-demo reader",
     "reader:setup": "bun run --cwd apps/insurance-card-demo reader:setup",
     "test": "bun run --cwd packages/insurance-card test && bun run --cwd apps/insurance-card-demo test",
