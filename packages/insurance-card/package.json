@@ -17,6 +17,7 @@
     "generate:stedi": "bun scripts/generate-stedi.ts",
     "insurance-card": "bun src/cli.ts",
     "preview": "bun scripts/preview.ts",
+    "prototypes": "bun scripts/prototypes.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

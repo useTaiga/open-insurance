@@ -17,5 +17,6 @@ jobs:
           python-version: "3.12"
       - run: bun install --frozen-lockfile
       - run: bun run check
+      - run: bun run prototypes --out "$RUNNER_TEMP/open-insurance-prototypes"
       - run: bun run reader:setup
       - run: bun run reader test

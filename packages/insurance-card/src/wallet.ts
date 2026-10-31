@@ -12,6 +12,7 @@ export interface WalletIssuer {
   passTypeIdentifier: string;
   teamIdentifier: string;
   organizationName: string;
+  demo?: boolean;
   encryptionPublicKey?: string;
   branding?: {
     background: string;
@@ -44,6 +45,7 @@ const issuerSchema = {
       required: ["background", "foreground", "label"],
       type: "object",
     },
+    demo: { type: "boolean" },
     encryptionPublicKey: { type: "string" },
     organizationName: { minLength: 1, type: "string" },
     passTypeIdentifier: { type: "string" },
@@ -104,7 +106,10 @@ export const createApplePassJson = (
   const patient = card.insurance.dependents?.[0] ?? card.insurance.subscriber;
   return {
     backgroundColor: color(issuer.branding?.background ?? "#15463d"),
-    description: "Health insurance card",
+    description:
+      issuer.demo === true
+        ? `${issuer.organizationName} · Fictional prototype`
+        : "Health insurance card",
     expirationDate: card.expiresAt,
     foregroundColor: color(issuer.branding?.foreground ?? "#ffffff"),
     formatVersion: 1,
@@ -119,6 +124,16 @@ export const createApplePassJson = (
         },
       ],
       backFields: [
+        ...(issuer.demo === true
+          ? [
+              {
+                key: "demonstration",
+                label: "FICTIONAL PROTOTYPE",
+                value:
+                  "Created by Taiga for demonstration. Not issued by the named insurer. Member details and benefits are fictional. This card does not establish insurance coverage.",
+              },
+            ]
+          : []),
         {
           key: "policyholder",
           label: "POLICYHOLDER",
@@ -131,11 +146,14 @@ export const createApplePassJson = (
               .join(" ") || "See issuer",
         },
       ],
-      headerFields: [],
+      headerFields:
+        issuer.demo === true
+          ? [{ key: "prototype", label: "", value: "DEMO" }]
+          : [],
       primaryFields: [
         {
           key: "patient",
-          label: "MEMBER",
+          label: issuer.demo === true ? "FICTIONAL MEMBER" : "MEMBER",
           value:
             [patient.firstName, patient.lastName].filter(Boolean).join(" ") ||
             "Member",
@@ -165,7 +183,10 @@ export const createApplePassJson = (
             requiresAuthentication: true,
           },
         }),
-    organizationName: issuer.organizationName,
+    organizationName:
+      issuer.demo === true
+        ? "Open Insurance by Taiga"
+        : issuer.organizationName,
     passTypeIdentifier: issuer.passTypeIdentifier,
     serialNumber: message,
     sharingProhibited: true,

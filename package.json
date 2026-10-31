@@ -43,6 +43,7 @@
     "check": "bun run test && bun run typecheck && bun run example",
     "dev": "bun run --cwd apps/insurance-card-demo dev",
     "example": "bun packages/insurance-card/examples/issuer.ts",
+    "prototypes": "bun run --cwd packages/insurance-card prototypes",
     "reader": "bun run --cwd apps/insurance-card-demo reader",
     "reader:setup": "bun run --cwd apps/insurance-card-demo reader:setup",
     "test": "bun run --cwd packages/insurance-card test && bun run --cwd apps/insurance-card-demo test",

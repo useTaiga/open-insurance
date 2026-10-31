@@ -24,6 +24,10 @@ Open [the issuer lab](http://127.0.0.1:4320). Leave **Include fictional issuer b
 
 The example and lab use fictional members and send no eligibility inquiries. No account, API key, Apple certificate or NFC hardware is needed for this software-only path. Use `INSURANCE_CARD_PORT` to choose another local port.
 
+For branded fictional Angle Health, Curative and Oscar Health bundles, run `bun run prototypes --out /tmp/open-insurance-prototypes`. See [partner prototypes](docs/partner-prototypes.md) for previews, supplied benefits, dependent examples and optional ordinary Wallet signing.
+
+![Fictional Angle, Curative and Oscar Wallet concepts](docs/assets/partner-prototypes.png)
+
 ## Use the SDK
 
 In a separate Bun application:
