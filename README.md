@@ -65,7 +65,9 @@ const pkpass = await insurer.sign(card.message, signingCertificates);
 // Serve pkpass as application/vnd.apple.pkpass from your member portal.
 ```
 
-The payer ID selects the exact payer name and optional Stedi logo. Logos are converted to Wallet PNG assets at three resolutions. Fuzzy or ambiguous matches fail. Member input cannot change the configured payer. Supplying a payer ID does not verify that you represent that payer. The directory sends no patient data and does not forward credentials to the logo host. Stedi supplies no brand colors; insurers may set `wallet.branding` explicitly.
+The payer ID selects the exact payer name and optional Stedi logo. Logos fit inside Wallet's image bounds at three resolutions, preserving their proportions without padding. The adapter includes starter palettes: blue for Horizon, purple for Aetna and navy for UnitedHealthcare. Stedi supplies no brand colors; these are SDK defaults. Insurers can override them with `wallet.branding`, and a custom directory may return `branding` with its payer record.
+
+Fuzzy or ambiguous matches fail. Member input cannot change the configured payer. Supplying a payer ID does not verify that you represent that payer. The directory sends no patient data and does not forward credentials to the logo host.
 
 Signing requires an Apple-issued certificate and private key. Omitting `encryptionPublicKey` creates an ordinary Wallet pass with NFC disabled. Adding it requires Apple's NFC-authorized signing permission. `insurer.pass(card.message)` returns unsigned JSON. Refresh long-lived insurer instances at least daily to keep payer metadata current, following [Stedi's directory guidance](https://www.stedi.com/docs/healthcare/api-reference/get-search-payers).
 

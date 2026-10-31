@@ -12,6 +12,12 @@ interface SearchResult {
   items: { payer: Payer }[];
   nextPageToken?: string;
 }
+const payerBackgrounds: Record<string, string> = {
+  HPQRS: "#7f4098",
+  KMQTZ: "#062c76",
+  NRHDN: "#0067ac",
+  NSIEN: "#0067ac",
+};
 const nonemptyString = { minLength: 1, type: "string" };
 const validate = new Ajv().compile<SearchResult>({
   properties: {
@@ -95,6 +101,15 @@ export const createStediPayerDirectory = (options: {
       logo = Buffer.from(await response.arrayBuffer());
     }
     return {
+      ...(payerBackgrounds[payer.stediId] === undefined
+        ? {}
+        : {
+            branding: {
+              background: payerBackgrounds[payer.stediId],
+              foreground: "#ffffff",
+              label: "#ffffff",
+            },
+          }),
       logo,
       name: payer.displayName,
       payerId,

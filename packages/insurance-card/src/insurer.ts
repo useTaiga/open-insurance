@@ -16,6 +16,7 @@ export interface PayerBrand {
   name: string;
   stediId?: string;
   logo?: Buffer;
+  branding?: WalletIssuer["branding"];
 }
 export type PayerDirectory = (payerId: string) => Promise<PayerBrand>;
 export interface InsurerOptions {
@@ -37,6 +38,7 @@ export const createInsurer = async (options: InsurerOptions) => {
   }
   const wallet = parseWalletIssuer({
     ...structuredClone(options.wallet),
+    branding: structuredClone(options.wallet.branding ?? payer.branding),
     organizationName: payer.name,
   });
   const logo = payer.logo === undefined ? undefined : Buffer.from(payer.logo);
@@ -45,8 +47,7 @@ export const createInsurer = async (options: InsurerOptions) => {
       ? undefined
       : await sharp(logo)
           .resize(160 * scale, 50 * scale, {
-            background: { alpha: 0, b: 0, g: 0, r: 0 },
-            fit: "contain",
+            fit: "inside",
           })
           .png()
           .toBuffer();
@@ -84,7 +85,7 @@ export const createInsurer = async (options: InsurerOptions) => {
     pass: (message: unknown) => createApplePassJson(resolve(message), wallet),
     get payer(): PayerBrand {
       return {
-        ...payer,
+        ...structuredClone(payer),
         logo: logo === undefined ? undefined : Buffer.from(logo),
       };
     },
