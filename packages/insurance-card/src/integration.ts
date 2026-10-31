@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
+import { z } from "zod";
+
 import { parseBenefitsSnapshot, readCardBenefits } from "./benefits";
 import {
   createEligibilityRequest,
@@ -10,6 +12,7 @@ import {
 import type { ClinicContext } from "./contract";
 import { createInsurer } from "./insurer";
 import type { MemberData } from "./insurer";
+import { summarizeBenefits } from "./intake";
 import { parseCardReference } from "./issuer";
 import type { CardStore } from "./issuer";
 import { inspectIssuerSetup, loadSigningCertificates } from "./setup";
@@ -23,11 +26,57 @@ export interface MemberIndex {
   delete: (payerId: string, memberKey: string) => void;
 }
 
-export interface Enrollment {
+export interface ActiveEnrollment {
+  status: "active";
   member: MemberData;
-  expiresAt: Date;
+  credentialExpiresAt: Date;
   benefits?: unknown;
 }
+export type Enrollment = ActiveEnrollment | { status: "terminated" };
+
+const activeEnrollmentSchema = z.strictObject({
+  benefits: z.unknown().optional(),
+  credentialExpiresAt: z.union([
+    z.date(),
+    z.iso.datetime().transform((value) => new Date(value)),
+  ]),
+  member: z.object({
+    dependents: z.unknown().optional(),
+    subscriber: z.unknown(),
+  }),
+  status: z.literal("active"),
+});
+const enrollmentSchema = z.discriminatedUnion("status", [
+  activeEnrollmentSchema,
+  z.object({ status: z.literal("terminated") }),
+]);
+
+export const parseEnrollment = (
+  value: unknown,
+  payer: { payerId: string; name: string }
+): Enrollment => {
+  const input = enrollmentSchema.parse(value);
+  if (input.status === "terminated") {
+    return { status: "terminated" };
+  }
+  const insurance = parseInsuranceData({
+    ...input.member,
+    tradingPartnerName: payer.name,
+    tradingPartnerServiceId: payer.payerId,
+  });
+  return {
+    benefits:
+      input.benefits === undefined
+        ? undefined
+        : parseBenefitsSnapshot(input.benefits, insurance),
+    credentialExpiresAt: input.credentialExpiresAt,
+    member: {
+      dependents: insurance.dependents,
+      subscriber: insurance.subscriber,
+    },
+    status: input.status,
+  };
+};
 
 export interface IssuerIntegrationOptions {
   setup: IssuerSetup;
@@ -92,8 +141,14 @@ export const createIssuerIntegration = async (
   };
 
   const refresh = async (memberKey: string, expectedMessage?: string) => {
-    const enrollment = await options.loadEnrollment(memberKey);
-    if (!enrollment || !(enrollment.expiresAt.getTime() > Date.now())) {
+    const source = await options.loadEnrollment(memberKey);
+    const enrollment =
+      source === undefined ? undefined : parseEnrollment(source, setup);
+    if (
+      !enrollment ||
+      enrollment.status === "terminated" ||
+      !(enrollment.credentialExpiresAt.getTime() > Date.now())
+    ) {
       revoke(memberKey);
       throw new HttpError(410, "No current enrollment is available.");
     }
@@ -122,7 +177,7 @@ export const createIssuerIntegration = async (
       ) {
         const updated = {
           benefits,
-          expiresAt: enrollment.expiresAt.toISOString(),
+          expiresAt: enrollment.credentialExpiresAt.toISOString(),
           insurance,
           message,
         };
@@ -136,11 +191,28 @@ export const createIssuerIntegration = async (
     }
     const card = issuer.issue(
       { dependents: insurance.dependents, subscriber: insurance.subscriber },
-      enrollment.expiresAt,
+      enrollment.credentialExpiresAt,
       benefits
     );
     members.set(payerId, memberKey, card.message);
     return card;
+  };
+
+  const sync = async (key: string) => {
+    const reference = members.get(payerId, key);
+    if (reference === undefined) {
+      return { status: "not-issued" as const };
+    }
+    try {
+      await refresh(key, reference);
+      return { status: "updated" as const };
+    } catch (error) {
+      if (error instanceof HttpError && error.status === 410) {
+        revoke(key);
+        return { status: "revoked" as const };
+      }
+      throw error;
+    }
   };
 
   const memberKey = async (request: Request) => {
@@ -176,6 +248,8 @@ export const createIssuerIntegration = async (
       benefits: benefits ?? null,
       eligibilityRequest,
       insurance: card.insurance,
+      intake:
+        benefits === undefined ? null : summarizeBenefits(benefits.snapshot),
       sent: false,
     });
   };
@@ -190,6 +264,12 @@ export const createIssuerIntegration = async (
           payerId,
           physicalTap: "unverified",
           walletReady: readiness.walletReady,
+        });
+      } else if (request.method === "GET" && pathname === "/reader/config") {
+        response = Response.json({
+          nfcReady: readiness.nfcReady,
+          passTypeIdentifier: setup.wallet.passTypeIdentifier,
+          sendsEligibility: false,
         });
       } else if (
         request.method === "GET" &&
@@ -266,5 +346,5 @@ export const createIssuerIntegration = async (
     response.headers.set("cache-control", "no-store");
     return response;
   };
-  return { fetch, readiness, revoke };
+  return { fetch, readiness, revoke, sync };
 };

@@ -1,0 +1,23 @@
+{
+  "member": {
+    "issuer": "https://identity.example.com",
+    "audience": "insurance-member-wallet",
+    "jwksUrl": "https://identity.example.com/.well-known/jwks.json"
+  },
+  "clinic": {
+    "issuer": "https://identity.example.com",
+    "audience": "insurance-clinic-intake",
+    "jwksUrl": "https://identity.example.com/.well-known/jwks.json"
+  },
+  "members": { "verified-member-subject": "subscriber" },
+  "clinics": {
+    "verified-clinic-subject": {
+      "memberKeys": ["subscriber"],
+      "scope": {
+        "billingProviderNpi": "1999999984",
+        "provider": { "npi": "1999999984", "organizationName": "Fictional Example Clinic" },
+        "encounter": { "serviceTypeCodes": ["30"] }
+      }
+    }
+  }
+}

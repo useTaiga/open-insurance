@@ -1,0 +1,126 @@
+{
+  "id": "fictional-eligibility-response",
+  "demo": true,
+  "payerId": "00001",
+  "subscriber": {
+    "memberId": "0000123456",
+    "dates": { "plan": { "start": "2026-01-01", "end": "2026-12-31" } }
+  },
+  "dependent": {
+    "dates": {
+      "plan": { "start": "2026-04-01", "end": "2026-12-31" },
+      "eligibility": { "start": "2026-04-01", "end": "2026-11-30" }
+    }
+  },
+  "plans": [
+    {
+      "name": "Fictional Choice PPO",
+      "benefits": {
+        "statuses": [
+          {
+            "status": "ACTIVE_COVERAGE",
+            "service": {
+              "system": "STC",
+              "value": "30",
+              "definition": "Health Benefit Plan Coverage"
+            }
+          }
+        ],
+        "coPayment": [
+          {
+            "amount": "25.00",
+            "coverageLevel": "INDIVIDUAL",
+            "network": { "indicator": "IN_NETWORK" },
+            "service": {
+              "system": "STC",
+              "value": "98",
+              "definition": "Office visit"
+            },
+            "dates": {
+              "benefit": { "start": "2026-07-01", "end": "2026-11-30" }
+            },
+            "priorAuthIndicator": "NOT_REQUIRED"
+          }
+        ],
+        "coInsurance": [
+          {
+            "percent": "0.20",
+            "coverageLevel": "INDIVIDUAL",
+            "network": { "indicator": "OUT_OF_NETWORK" },
+            "service": {
+              "system": "STC",
+              "value": "98",
+              "definition": "Office visit"
+            }
+          }
+        ],
+        "deductible": [
+          {
+            "amount": "1500.00",
+            "coverageLevel": "INDIVIDUAL",
+            "network": { "indicator": "IN_NETWORK" },
+            "timePeriod": "CALENDAR_YEAR",
+            "service": {
+              "system": "STC",
+              "value": "30",
+              "definition": "Health Benefit Plan Coverage"
+            }
+          },
+          {
+            "amount": "750.00",
+            "coverageLevel": "INDIVIDUAL",
+            "network": { "indicator": "IN_NETWORK" },
+            "timePeriod": "REMAINING",
+            "service": {
+              "system": "STC",
+              "value": "30",
+              "definition": "Health Benefit Plan Coverage"
+            }
+          }
+        ],
+        "outOfPocket": [
+          {
+            "amount": "6000.00",
+            "coverageLevel": "INDIVIDUAL",
+            "network": { "indicator": "IN_NETWORK" },
+            "timePeriod": "CALENDAR_YEAR",
+            "service": {
+              "system": "STC",
+              "value": "30",
+              "definition": "Health Benefit Plan Coverage"
+            }
+          },
+          {
+            "amount": "4000.00",
+            "coverageLevel": "INDIVIDUAL",
+            "network": { "indicator": "IN_NETWORK" },
+            "timePeriod": "REMAINING",
+            "service": {
+              "system": "STC",
+              "value": "30",
+              "definition": "Health Benefit Plan Coverage"
+            }
+          },
+          {
+            "amount": "12000.00",
+            "coverageLevel": "FAMILY",
+            "network": { "indicator": "IN_NETWORK" },
+            "timePeriod": "CALENDAR_YEAR",
+            "service": {
+              "system": "STC",
+              "value": "30",
+              "definition": "Health Benefit Plan Coverage"
+            }
+          }
+        ],
+        "benefitDisclaimer": [
+          {
+            "messages": [
+              "Fictional issuer benefits for software testing. No coverage or payment guarantee."
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

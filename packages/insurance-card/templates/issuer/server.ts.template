@@ -1,49 +1,124 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { z } from "zod";
+import type { IssuerIntegrationOptions } from "open-insurance/integration";
 import { createIssuerIntegration } from "open-insurance/integration";
 import { readIssuerSetup } from "open-insurance/setup";
 import { SqliteCardStore, SqliteMemberIndex } from "open-insurance/sqlite";
+import { loadAuthorization } from "./authorization";
+import { updateDemoEnrollment } from "./demo";
 import { createEnrollmentLoader } from "./enrollment";
 
 const directory = import.meta.dir;
+const mode = z.enum(["demo", "pilot"]).parse(process.env.INSURANCE_MODE ?? "demo");
 const setup = await readIssuerSetup(path.join(directory, "issuer.json"));
-const database = path.join(directory, ".local/cards.sqlite");
+if (mode === "demo" && setup.wallet.demo !== true) {
+  throw new Error("Demo mode requires an explicitly fictional Wallet issuer.");
+}
+const demoMember = (request: Request) => {
+  const key = new Bun.CookieMap(request.headers.get("cookie") ?? "").get("demo-member");
+  return key === "subscriber" || key === "dependent" ? key : undefined;
+};
+const authorization: Pick<IssuerIntegrationOptions, "authorizeMember" | "authorizeClinic"> =
+  mode === "pilot"
+    ? await loadAuthorization()
+    : {
+        authorizeMember: async (request: Request) => demoMember(request),
+        authorizeClinic: async (request: Request) =>
+          request.headers.get("x-demo-clinic") === "fixture"
+            ? {
+                billingProviderNpi: "1999999984",
+                provider: { npi: "1999999984", organizationName: "Fictional Example Clinic" },
+                encounter: { serviceTypeCodes: ["30"] },
+              }
+            : undefined,
+      };
+const database = path.join(directory, `.local/${mode}-cards.sqlite`);
 const integration = await createIssuerIntegration({
-  setup, directory,
+  ...authorization,
+  setup,
+  directory,
   cards: new SqliteCardStore(database),
   members: new SqliteMemberIndex(database),
   loadEnrollment: createEnrollmentLoader(setup.payerId, setup.name),
-  authorizeMember: async (request) => {
-    const member = new Bun.CookieMap(request.headers.get("cookie") ?? "").get("demo-member");
-    return member === "subscriber" || member === "dependent" ? member : undefined;
-  },
-  authorizeClinic: async (request) => request.headers.get("x-demo-clinic") === "fixture" ? {
-    billingProviderNpi: "1999999984",
-    provider: { npi: "1999999984", organizationName: "Fictional Example Clinic" },
-    encounter: { serviceTypeCodes: ["30"] },
-  } : undefined,
 });
 
-const portal = await readFile(new URL("./portal.html", import.meta.url), "utf8");
+const assets = new Map<string, { body: string | ArrayBuffer; type: string }>();
+if (mode === "demo") {
+  const built = await Bun.build({
+    entrypoints: [path.join(directory, "portal.ts")],
+    target: "browser",
+    minify: true,
+  });
+  if (!built.success || !built.outputs[0]) {
+    throw new Error("The reference portal could not be built.");
+  }
+  assets.set("/portal.js", { body: await built.outputs[0].arrayBuffer(), type: "text/javascript" });
+  assets.set("/", {
+    body: await readFile(new URL("./portal.html", import.meta.url), "utf8"),
+    type: "text/html",
+  });
+  assets.set("/portal.css", {
+    body: await readFile(new URL("./portal.css", import.meta.url), "utf8"),
+    type: "text/css",
+  });
+}
+
 const server = Bun.serve({
   hostname: "127.0.0.1",
   port: Number(process.env.PORT ?? 4320),
   async fetch(request) {
-    const url = new URL(request.url);
-    if (request.method === "GET" && url.pathname === "/") {
-      return new Response(portal, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+    const { pathname } = new URL(request.url);
+    const asset = assets.get(pathname);
+    if (request.method === "GET" && asset) {
+      return new Response(asset.body, {
+        headers: { "content-type": `${asset.type}; charset=utf-8`, "cache-control": "no-store" },
+      });
     }
-    if (request.method === "GET" && url.pathname === "/api/setup") {
-      return Response.json({ name: setup.name, background: setup.wallet.branding?.background, report: integration.readiness }, { headers: { "cache-control": "no-store" } });
-    }
-    if (request.method === "POST" && url.pathname === "/demo/session") {
-      const member = await request.text();
-      if (member !== "subscriber" && member !== "dependent") {
-        return new Response("Choose a fictional member.", { status: 400 });
+    if (mode === "demo") {
+      if (request.method === "GET" && pathname === "/api/setup") {
+        return Response.json(
+          {
+            name: setup.name,
+            background: setup.wallet.branding?.background,
+            report: integration.readiness,
+          },
+          { headers: { "cache-control": "no-store" } },
+        );
       }
-      return new Response(null, { status: 204, headers: { "set-cookie": `demo-member=${member}; HttpOnly; SameSite=Strict; Path=/`, "cache-control": "no-store" } });
+      if (request.method === "POST" && pathname === "/demo/session") {
+        const key = await request.text();
+        if (key !== "subscriber" && key !== "dependent") {
+          return new Response("Choose a fictional member.", { status: 400 });
+        }
+        return new Response(null, {
+          status: 204,
+          headers: {
+            "set-cookie": `demo-member=${key}; HttpOnly; SameSite=Strict; Path=/`,
+            "cache-control": "no-store",
+          },
+        });
+      }
+      if (request.method === "POST" && pathname === "/demo/enrollment") {
+        const key = demoMember(request);
+        const input = z
+          .object({ action: z.enum(["change-copay", "terminate", "restore"]) })
+          .safeParse(await request.json().catch(() => null));
+        if (!key || !input.success) {
+          return Response.json(
+            { error: "Choose a fictional member and valid update." },
+            { status: 400 },
+          );
+        }
+        await updateDemoEnrollment(key, input.data.action);
+        return Response.json(await integration.sync(key), {
+          headers: { "cache-control": "no-store" },
+        });
+      }
     }
     return integration.fetch(request);
   },
 });
-process.stdout.write(`Fictional issuer reference: ${server.url}\nDemo identities only. Replace both authorization callbacks before integration.\n`);
+process.stdout.write(
+  `${mode === "demo" ? "Fictional issuer reference" : "Authenticated pilot API"}: ${server.url}\n`,
+);

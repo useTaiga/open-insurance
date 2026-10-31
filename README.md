@@ -57,6 +57,8 @@ Start with the complete [issuer example](packages/insurance-card/examples/issuer
 | Setup checker | Apple identity, certificate trust, NFC capability and reader key diagnostics; physical tap remains a separate test. |
 | Wallet preparation | Branded pass JSON and signing with your Apple credentials. Ordinary passes can omit NFC. |
 | Supplied benefits | Complete JSON with source, patient/payer binding, dates and optional provider context. |
+| Intake view | Both Stedi response formats, patient and benefit dates, separate financial rows, review messages and original JSON. |
+| Pilot adapters | Verified identity tokens, member-specific clinic grants, authoritative enrollment sync and authenticated issuer reader mode. |
 | Eligibility mapping | Stedi-shaped requests composed with the clinic's verified provider scope; no automatic sends. |
 | Local lab | Fictional cards, simulated reads, benefits export and optional local signing. |
 | PN532 reader | Experimental Apple VAS polling and decryption, with offline protocol fixtures. |
@@ -66,6 +68,8 @@ An issuer supplies authoritative member data, signing credentials and a resolver
 ## Guides
 
 - [Issuer onboarding](docs/issuer-onboarding.md): generate a reference app, replace adapters and diagnose Apple/NFC setup.
+- [Coverage and intake](docs/intake.md): dates, financial details, complete responses and termination handling.
+- [Authenticated pilot](docs/pilot.md): configure real identity/grant adapters and connect the experimental reader.
 - [Integration](docs/integration.md): issuer API, payer branding, benefits, clinic context and signing.
 - [Architecture and trust boundaries](docs/architecture.md): what crosses NFC, what stays on the server and what a deployment must supply.
 - [Lab and reader](apps/insurance-card-demo/README.md): software demo, optional hardware and diagnostic configuration.

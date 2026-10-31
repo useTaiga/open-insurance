@@ -5,6 +5,7 @@ import Ajv from "ajv";
 import { PKPass } from "passkit-generator";
 import type { PassProps } from "passkit-generator";
 
+import { summarizeBenefits } from "./intake";
 import { parseCardReference } from "./issuer";
 import type { IssuedCard } from "./issuer";
 
@@ -145,6 +146,29 @@ export const createApplePassJson = (
               .filter(Boolean)
               .join(" ") || "See issuer",
         },
+        ...(card.benefits === undefined
+          ? []
+          : [
+              {
+                key: "benefitsAsOf",
+                label: "BENEFITS SNAPSHOT",
+                value: `Supplied ${card.benefits.asOf}. Snapshot expires ${card.benefits.expiresAt}. Coverage dates below are supplied data; this is not a fresh eligibility check.`,
+              },
+              ...summarizeBenefits(card.benefits).dates.map(
+                (period, index) => ({
+                  key: `coverage-${index}`,
+                  label: `${period.kind.toUpperCase()} DATES · SUPPLIED SNAPSHOT`,
+                  value: period.invalid
+                    ? "Conflicting or invalid dates. Review with the issuer."
+                    : `Start: ${period.start ?? "Not supplied"}\nEnd: ${period.end ?? "Not supplied"}${period.on === null ? "" : `\nReported date: ${period.on}`}`,
+                })
+              ),
+              {
+                key: "credentialExpiry",
+                label: "CARD EXPIRATION",
+                value: `${card.expiresAt}. This is the credential's expiration, not the insurance coverage end date.`,
+              },
+            ]),
       ],
       headerFields:
         issuer.demo === true

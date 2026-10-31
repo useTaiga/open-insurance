@@ -6,6 +6,7 @@ import { partnerPrototypes } from "../examples/partners";
 import { generateNfcKeys } from "../src/index";
 import {
   benefitsDataSample,
+  benefitsPlansSample,
   dependentSample,
   subscriberSample,
 } from "../src/samples";
@@ -93,7 +94,9 @@ if (positionals[0] === "doctor") {
     path.join(output, "logo.png")
   );
   const asOf = new Date();
-  const expiresAt = new Date(asOf.getTime() + 30 * 86_400_000).toISOString();
+  const credentialExpiresAt = new Date(
+    asOf.getTime() + 30 * 86_400_000
+  ).toISOString();
   const enrollments = Object.fromEntries(
     (
       [
@@ -111,26 +114,38 @@ if (positionals[0] === "doctor") {
         {
           benefits: {
             asOf: asOf.toISOString(),
-            data: {
-              ...benefitsDataSample,
-              demo: true,
-              payer: { name: partner.name },
-            },
+            data:
+              key === "dependent"
+                ? {
+                    ...benefitsPlansSample,
+                    payer: { name: { organization: partner.name } },
+                    payerId: partner.payerId,
+                  }
+                : {
+                    ...benefitsDataSample,
+                    demo: true,
+                    payer: { name: partner.name },
+                  },
             expiresAt: new Date(asOf.getTime() + 86_400_000).toISOString(),
-            format: "stedi-eligibility-legacy",
+            format:
+              key === "dependent"
+                ? "stedi-eligibility-2026-06-01"
+                : "stedi-eligibility-legacy",
             insurance,
             source: "issuer",
           },
-          expiresAt,
+          credentialExpiresAt,
           member: {
             dependents: insurance.dependents,
             subscriber: insurance.subscriber,
           },
+          status: "active",
         },
       ];
     })
   );
   await save("enrollments.json", enrollments);
+  await save("enrollments.seed.json", enrollments);
   await save("package.json", {
     dependencies: {
       "open-insurance": values.sdk ?? "github:useTaiga/open-insurance",
@@ -146,6 +161,7 @@ if (positionals[0] === "doctor") {
     scripts: {
       dev: "bun server.ts",
       doctor: "bun doctor.ts",
+      pilot: "INSURANCE_MODE=pilot bun server.ts",
       typecheck: "tsc --noEmit",
     },
     type: "module",
@@ -167,6 +183,11 @@ if (positionals[0] === "doctor") {
     "doctor.ts",
     "enrollment.ts",
     "portal.html",
+    "portal.css",
+    "portal.ts",
+    "authorization.ts",
+    "demo.ts",
+    "auth.example.json",
     "README.md",
     ".gitignore",
   ]) {

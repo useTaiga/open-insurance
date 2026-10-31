@@ -1,0 +1,35 @@
+import { readFile } from "node:fs/promises";
+import { z } from "zod";
+import { createJwtAuthorization, remoteTokenAuthority } from "open-insurance/authorization";
+import { parseClinicContext } from "open-insurance";
+
+const authority = z.object({ issuer: z.url(), audience: z.string().min(1), jwksUrl: z.url() });
+const policySchema = z.object({
+  member: authority,
+  clinic: authority,
+  members: z.record(z.string(), z.string().min(1)),
+  clinics: z.record(z.string(), z.object({ memberKeys: z.array(z.string()), scope: z.unknown() })),
+});
+
+const readPolicy = async () =>
+  policySchema.parse(JSON.parse(await readFile(new URL("./auth.json", import.meta.url), "utf8")));
+
+export const loadAuthorization = async () => {
+  const policy = await readPolicy();
+  return createJwtAuthorization({
+    member: remoteTokenAuthority(policy.member),
+    clinic: remoteTokenAuthority(policy.clinic),
+    readMemberToken: (request) =>
+      new Bun.CookieMap(request.headers.get("cookie") ?? "").get("__Host-insurance-session") ??
+      undefined,
+    loadMemberKey: async (subject) => {
+      const current = await readPolicy();
+      return current.members[subject];
+    },
+    loadClinicGrant: async (subject, memberKey) => {
+      const current = await readPolicy();
+      const grant = current.clinics[subject];
+      return grant?.memberKeys.includes(memberKey) ? parseClinicContext(grant.scope) : undefined;
+    },
+  });
+};

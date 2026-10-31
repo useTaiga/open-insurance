@@ -1,0 +1,407 @@
+import { z } from "zod";
+import { intakeSummarySchema } from "open-insurance/intake";
+import type { IntakeSummary, CoveragePeriod } from "open-insurance/intake";
+
+const element = <T extends HTMLElement>(id: string, type: { new (): T }): T => {
+  const value = document.getElementById(id);
+  if (!(value instanceof type)) {
+    throw new Error(`Missing interface element: ${id}`);
+  }
+  return value;
+};
+const node = (tag: string, text?: string, className?: string) => {
+  const value = document.createElement(tag);
+  if (text !== undefined) {
+    value.textContent = text;
+  }
+  if (className) {
+    value.className = className;
+  }
+  return value;
+};
+const text = (id: string, value: string) => {
+  element(id, HTMLElement).textContent = value;
+};
+const button = (id: string) => element(id, HTMLButtonElement);
+const member = element("member", HTMLSelectElement);
+const filter = element("filter", HTMLSelectElement);
+const wallet = element("wallet", HTMLAnchorElement);
+const setupSchema = z.object({
+  name: z.string(),
+  background: z.string().optional(),
+  report: z.object({
+    walletReady: z.boolean(),
+    nfcConfigured: z.boolean(),
+    nfcReady: z.boolean(),
+    checks: z.array(
+      z.object({
+        id: z.string(),
+        status: z.enum(["ready", "blocked", "unverified"]),
+        detail: z.string(),
+      }),
+    ),
+  }),
+});
+const passSchema = z.object({
+  serialNumber: z.string(),
+  generic: z.object({
+    primaryFields: z.array(z.object({ value: z.string() })),
+    secondaryFields: z.array(z.object({ key: z.string(), value: z.string() })),
+  }),
+});
+const readSchema = z.object({
+  benefits: z
+    .object({
+      freshness: z.enum(["within-validity", "expired", "not-yet-valid"]),
+      snapshot: z
+        .object({
+          asOf: z.string(),
+          expiresAt: z.string(),
+          source: z.string(),
+          data: z.record(z.string(), z.json()),
+        })
+        .passthrough(),
+    })
+    .nullable(),
+  intake: intakeSummarySchema.nullable(),
+  eligibilityRequest: z.json(),
+});
+let setup: z.infer<typeof setupSchema> | undefined;
+let reference: string | undefined;
+let selected = false;
+let summary: IntakeSummary | null = null;
+let busy = false;
+
+const call = async (url: string, init?: RequestInit): Promise<unknown> => {
+  const response = await fetch(url, init);
+  if (!response.ok) {
+    const body: unknown = await response.json();
+    const parsed = z.object({ error: z.string() }).safeParse(body);
+    throw new Error(parsed.success ? parsed.data.error : "The request could not be completed.");
+  }
+  return response.status === 204 ? undefined : await response.json();
+};
+const controls = () => {
+  member.disabled = busy;
+  button("preview").disabled = busy;
+  for (const id of ["read", "revoke"]) {
+    button(id).disabled = busy || reference === undefined;
+  }
+  for (const id of ["change", "terminate", "restore"]) {
+    button(id).disabled = busy || !selected;
+  }
+  wallet.setAttribute(
+    "aria-disabled",
+    String(
+      busy ||
+        reference === undefined ||
+        !setup?.report.walletReady ||
+        (setup.report.nfcConfigured && !setup.report.nfcReady),
+    ),
+  );
+  wallet.tabIndex = wallet.getAttribute("aria-disabled") === "true" ? -1 : 0;
+};
+wallet.onclick = (event) => {
+  if (wallet.getAttribute("aria-disabled") === "true") {
+    event.preventDefault();
+  }
+};
+const clearResult = () => {
+  summary = null;
+  element("result", HTMLElement).hidden = true;
+  element("empty", HTMLElement).hidden = false;
+  element("plans", HTMLElement).replaceChildren();
+  element("coverage", HTMLElement).replaceChildren();
+  text("benefits", "");
+  text("request", "");
+};
+const run = (operation: () => Promise<void>) => async () => {
+  if (busy) {
+    return;
+  }
+  busy = true;
+  controls();
+  text("message", "Working…");
+  try {
+    await operation();
+  } catch (error) {
+    clearResult();
+    text("message", error instanceof Error ? error.message : "The request could not be completed.");
+  } finally {
+    busy = false;
+    controls();
+  }
+};
+const date = (value: string | null) => {
+  if (value === null) {
+    return "Not supplied";
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" }).format(parsed);
+};
+const periodNode = (period: CoveragePeriod) => {
+  const value = node("div", undefined, "period");
+  value.append(node("strong", period.kind));
+  if (period.invalid) {
+    value.append(node("span", "Invalid or conflicting dates — review original JSON."));
+  }
+  value.append(
+    node("span", `Start: ${date(period.start)}`),
+    node("span", `End: ${date(period.end)}`),
+  );
+  if (period.on !== null) {
+    value.append(node("span", `Reported date: ${date(period.on)}`));
+  }
+  return value;
+};
+const readable = (value: string | null) =>
+  value === null
+    ? "Not supplied"
+    : value.includes("_")
+      ? value.toLowerCase().replaceAll("_", " ")
+      : value;
+const network = (value: string | null) =>
+  ({
+    Yes: "In-network benefit",
+    No: "Out-of-network benefit",
+    IN_NETWORK: "In-network benefit",
+    OUT_OF_NETWORK: "Out-of-network benefit",
+    IN_AND_OUT_OF_NETWORK: "In- and out-of-network benefit",
+  })[value ?? ""] ?? readable(value);
+const valueOf = (benefit: IntakeSummary["plans"][number]["benefits"][number]) => {
+  if (benefit.amount !== null) {
+    return /^\d+(\.\d+)?$/u.test(benefit.amount) ? `$${benefit.amount}` : benefit.amount;
+  }
+  if (benefit.percent !== null) {
+    const number = Number(benefit.percent);
+    return Number.isFinite(number) && number >= 0 && number <= 1
+      ? new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 6 }).format(
+          number,
+        )
+      : `${benefit.percent} (as supplied)`;
+  }
+  if (benefit.quantity !== null) {
+    return `Quantity: ${benefit.quantity}`;
+  }
+  if (benefit.category === "benefitDisclaimer") {
+    return "Informational";
+  }
+  return readable(benefit.status);
+};
+const renderBenefits = () => {
+  const target = element("plans", HTMLElement);
+  target.replaceChildren();
+  if (!summary) {
+    return;
+  }
+  for (const plan of summary.plans) {
+    const benefits = plan.benefits.filter(
+      (item) => filter.value === "all" || item.category === filter.value,
+    );
+    if (benefits.length === 0) {
+      continue;
+    }
+    target.append(node("h4", plan.name ?? "Plan name not supplied", "plan-name"));
+    const wrapper = node("div", undefined, "table-wrap");
+    const table = node("table");
+    const head = node("thead");
+    const heading = node("tr");
+    for (const label of ["Benefit / value", "Service", "Applies to", "Dates / notes"]) {
+      heading.append(node("th", label));
+    }
+    head.append(heading);
+    const body = node("tbody");
+    for (const benefit of benefits) {
+      const row = node("tr");
+      const value = node("td");
+      const displayed = valueOf(benefit);
+      value.append(node("strong", displayed));
+      if (displayed.toLowerCase() !== benefit.label.toLowerCase()) {
+        value.append(node("span", benefit.label));
+      }
+      const service = node("td", benefit.services.length === 0 ? "Not supplied" : "");
+      for (const item of benefit.services) {
+        service.append(node("span", `${item.name ?? item.code} · ${item.system} ${item.code}`));
+      }
+      const applies = node("td", network(benefit.network));
+      applies.append(
+        node("span", `Coverage: ${readable(benefit.coverageLevel)}`),
+        node("span", `Period: ${readable(benefit.timePeriod)}`),
+      );
+      if (benefit.insuranceType !== null) {
+        applies.append(node("span", readable(benefit.insuranceType)));
+      }
+      const notes = node("td");
+      if (benefit.description !== null) {
+        notes.append(node("span", benefit.description));
+      }
+      for (const period of benefit.dates) {
+        notes.append(periodNode(period));
+      }
+      if (benefit.dates.length === 0) {
+        notes.append(
+          node("span", "No benefit-specific dates supplied; review patient coverage dates."),
+        );
+      }
+      if (benefit.authorization !== null) {
+        notes.append(node("span", `Authorization: ${readable(benefit.authorization)}`));
+      }
+      for (const message of benefit.messages) {
+        notes.append(node("span", message));
+      }
+      row.append(value, service, applies, notes);
+      body.append(row);
+    }
+    table.append(head, body);
+    wrapper.append(table);
+    target.append(wrapper);
+  }
+  if (target.childElementCount === 0) {
+    target.append(node("p", "No benefits supplied for this filter.", "note"));
+  }
+};
+const load = async () => {
+  clearResult();
+  reference = undefined;
+  await call("/demo/session", { method: "POST", body: member.value });
+  selected = true;
+  const pass = passSchema.parse(await call("/member/pass.json"));
+  reference = pass.serialNumber;
+  text("patient", pass.generic.primaryFields[0]?.value ?? "Member name not supplied");
+  text(
+    "identity",
+    `Member ID ${pass.generic.secondaryFields.find((field) => field.key === "memberId")?.value ?? "Not supplied"}`,
+  );
+  text(
+    "group",
+    `Group ${pass.generic.secondaryFields.find((field) => field.key === "group")?.value ?? "Not supplied"}`,
+  );
+  text("message", "Member card loaded. Simulate a read to retrieve current issuer data.");
+};
+button("preview").onclick = run(load);
+member.onchange = () => {
+  reference = undefined;
+  selected = false;
+  clearResult();
+  text("patient", "Choose a member");
+  text("identity", "Enrollment comes from the issuer.");
+  text("group", "");
+  text("message", "");
+  controls();
+};
+filter.onchange = renderBenefits;
+button("read").onclick = run(async () => {
+  clearResult();
+  const result = readSchema.parse(
+    await call("/clinic/read", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-demo-clinic": "fixture" },
+      body: JSON.stringify({ message: reference }),
+    }),
+  );
+  summary = result.intake;
+  element("empty", HTMLElement).hidden = true;
+  element("result", HTMLElement).hidden = false;
+  const fresh = result.benefits?.freshness;
+  text(
+    "freshness",
+    fresh === "within-validity"
+      ? "Within supplied snapshot validity"
+      : fresh === "expired"
+        ? "Expired snapshot — historical information"
+        : fresh === "not-yet-valid"
+          ? "Snapshot not yet valid"
+          : "No supplied benefits for this provider",
+  );
+  element("freshness", HTMLElement).parentElement?.setAttribute(
+    "data-fresh",
+    String(fresh === "within-validity"),
+  );
+  text("observed", result.benefits ? `Supplied: ${result.benefits.snapshot.asOf}` : "");
+  text(
+    "snapshot-expires",
+    result.benefits ? `Snapshot expires: ${result.benefits.snapshot.expiresAt}` : "",
+  );
+  text("date-subject", summary ? `· ${summary.patient}` : "");
+  const dates = summary?.dates ?? [];
+  const coverage = element("coverage", HTMLElement);
+  coverage.className = "date-grid";
+  if (dates.length === 0) {
+    coverage.append(
+      periodNode({ kind: "Plan", start: null, end: null, on: null, invalid: false, sources: [] }),
+    );
+  } else {
+    for (const period of dates) {
+      coverage.append(periodNode(period));
+    }
+  }
+  const issues = element("issues", HTMLElement);
+  issues.replaceChildren();
+  for (const issue of summary?.issues ?? []) {
+    issues.append(node("p", issue));
+  }
+  issues.hidden = issues.childElementCount === 0;
+  renderBenefits();
+  text("benefits", JSON.stringify(result.benefits, null, 2));
+  text("request", JSON.stringify(result.eligibilityRequest, null, 2));
+  text(
+    "message",
+    "Issuer enrollment refreshed. Supplied benefits retrieved. No eligibility inquiry sent.",
+  );
+});
+button("revoke").onclick = run(async () => {
+  await call("/member/card", { method: "DELETE" });
+  reference = undefined;
+  clearResult();
+  text("message", "Card reference revoked. The old card can no longer resolve.");
+});
+for (const [id, action] of [
+  ["change", "change-copay"],
+  ["terminate", "terminate"],
+  ["restore", "restore"],
+]) {
+  button(id).onclick = run(async () => {
+    clearResult();
+    await call("/demo/enrollment", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (action === "restore") {
+      await load();
+      text(
+        "message",
+        "Original fictional enrollment restored. A revoked reference stays revoked; a new card was loaded.",
+      );
+    } else {
+      text(
+        "message",
+        action === "terminate"
+          ? "Enrollment terminated and card revoked. Reading the existing card must now fail."
+          : "Issuer copay updated to $35. Read the same card again to retrieve the change.",
+      );
+    }
+  });
+}
+
+try {
+  setup = setupSchema.parse(await call("/api/setup"));
+  text("title", `${setup.name} · Insurance intake`);
+  text("payer", `${setup.name} · FICTIONAL`);
+  document.documentElement.style.setProperty("--brand", setup.background ?? "#6d39d9");
+  text(
+    "readiness",
+    `Wallet signing: ${setup.report.walletReady ? "ready" : "blocked"} · NFC: ${setup.report.nfcReady ? "configured; physical test required" : "blocked"}`,
+  );
+  for (const check of setup.report.checks) {
+    const value = node("div", undefined, "check");
+    value.dataset.status = check.status;
+    value.append(node("strong", `${check.status} · ${check.id}`), node("span", check.detail));
+    element("checks", HTMLElement).append(value);
+  }
+} catch (error) {
+  text("message", error instanceof Error ? error.message : "Setup could not be loaded.");
+}
+controls();

@@ -6,3 +6,5 @@ node_modules/
 .env*
 issuer.json
 enrollments.json
+enrollments.seed.json
+auth.json

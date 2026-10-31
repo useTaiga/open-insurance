@@ -1,7 +1,19 @@
 {
-  "payer": { "name": "Example Health · Synthetic" },
-  "subscriber": { "memberId": "0000123456", "groupNumber": "000987" },
+  "payer": {
+    "name": "Example Health \u00b7 Synthetic"
+  },
+  "subscriber": {
+    "memberId": "0000123456",
+    "groupNumber": "000987"
+  },
   "benefitsInformation": [
+    {
+      "code": "1",
+      "name": "Active coverage",
+      "serviceTypeCodes": ["30"],
+      "serviceTypes": ["Health Benefit Plan Coverage"],
+      "planCoverage": "Fictional Choice PPO"
+    },
     {
       "code": "B",
       "name": "Co-Payment",
@@ -10,8 +22,15 @@
       "serviceTypes": ["Professional (Physician) Visit - Office"],
       "inPlanNetworkIndicator": "Yes",
       "additionalInformation": [
-        { "description": "Fictional benefit supplied by the demo issuer." }
-      ]
+        {
+          "description": "Fictional benefit supplied by the demo issuer."
+        }
+      ],
+      "benefitsDateInformation": {
+        "benefitBegin": "20260701",
+        "benefitEnd": "20261130"
+      },
+      "planCoverage": "Fictional Choice PPO"
     },
     {
       "code": "C",
@@ -19,7 +38,68 @@
       "benefitAmount": "750.00",
       "serviceTypeCodes": ["30"],
       "timeQualifier": "Remaining",
-      "benefitsDateInformation": { "benefitBegin": "20260101" }
+      "benefitsDateInformation": {
+        "benefitBegin": "20260101"
+      },
+      "planCoverage": "Fictional Choice PPO"
+    },
+    {
+      "code": "A",
+      "name": "Coinsurance",
+      "benefitPercent": "0.20",
+      "serviceTypeCodes": ["98"],
+      "serviceTypes": ["Office visit"],
+      "inPlanNetworkIndicator": "No",
+      "coverageLevel": "Individual",
+      "planCoverage": "Fictional Choice PPO"
+    },
+    {
+      "code": "C",
+      "name": "Deductible",
+      "benefitAmount": "1500.00",
+      "serviceTypeCodes": ["30"],
+      "timeQualifier": "Calendar Year",
+      "inPlanNetworkIndicator": "Yes",
+      "coverageLevel": "Individual",
+      "planCoverage": "Fictional Choice PPO"
+    },
+    {
+      "code": "G",
+      "name": "Out of pocket",
+      "benefitAmount": "6000.00",
+      "serviceTypeCodes": ["30"],
+      "timeQualifier": "Calendar Year",
+      "inPlanNetworkIndicator": "Yes",
+      "coverageLevel": "Individual",
+      "planCoverage": "Fictional Choice PPO"
+    },
+    {
+      "code": "G",
+      "name": "Out of pocket",
+      "benefitAmount": "4000.00",
+      "serviceTypeCodes": ["30"],
+      "timeQualifier": "Remaining",
+      "inPlanNetworkIndicator": "Yes",
+      "coverageLevel": "Individual",
+      "planCoverage": "Fictional Choice PPO"
+    },
+    {
+      "code": "G",
+      "name": "Out of pocket",
+      "benefitAmount": "12000.00",
+      "serviceTypeCodes": ["30"],
+      "timeQualifier": "Calendar Year",
+      "inPlanNetworkIndicator": "Yes",
+      "coverageLevel": "Family",
+      "planCoverage": "Fictional Choice PPO"
     }
-  ]
+  ],
+  "planDateInformation": {
+    "planBegin": "20260101",
+    "planEnd": "20261231",
+    "eligibilityBegin": "20260201",
+    "eligibilityEnd": "20261130",
+    "policyEffective": "20260101",
+    "policyExpiration": "20261231"
+  }
 }

@@ -11,7 +11,9 @@
     "./sqlite": "./src/sqlite.ts",
     "./stedi": "./src/stedi.ts",
     "./integration": "./src/integration.ts",
-    "./setup": "./src/setup.ts"
+    "./setup": "./src/setup.ts",
+    "./intake": "./src/intake.ts",
+    "./authorization": "./src/authorization.ts"
   },
   "scripts": {
     "example": "bun examples/issuer.ts",
@@ -20,13 +22,18 @@
     "insurance-card": "bun src/cli.ts",
     "preview": "bun scripts/preview.ts",
     "prototypes": "bun scripts/prototypes.ts",
-    "test": "bun test",
+    "test": "bun run templates:check && bun test",
     "typecheck": "tsc --noEmit",
-    "onboarding": "bun scripts/onboarding.ts"
+    "onboarding": "bun scripts/onboarding.ts",
+    "onboarding:verify": "bun scripts/verify-onboarding.ts",
+    "templates:format": "bun scripts/format-templates.ts",
+    "templates:check": "bun scripts/format-templates.ts --check"
   },
   "dependencies": {
     "@peculiar/x509": "^3.1.0",
     "ajv": "^8.17.1",
+    "date-fns": "^4.4.0",
+    "jose": "^6.2.14",
     "passkit-generator": "^3.5.5",
     "reflect-metadata": "^0.2.2",
     "sharp": "^0.35.5",

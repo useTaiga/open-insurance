@@ -99,7 +99,12 @@ export const parseInsuranceData = (value: unknown): InsuranceData => {
       "subscriber needs memberId, dateOfBirth, or lastName to identify the member."
     );
   }
-  return structuredClone(value);
+  const transport = JSON.stringify(value);
+  const normalized: unknown = JSON.parse(transport);
+  if (!validateInsurance(normalized)) {
+    throw new Error("Insurance could not be represented as JSON.");
+  }
+  return normalized;
 };
 
 export const createEligibilityRequest = (

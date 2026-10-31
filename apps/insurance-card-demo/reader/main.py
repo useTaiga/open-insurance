@@ -96,7 +96,7 @@ def main():
     )
     parser.add_argument(
         "command",
-        choices=["doctor", "inspect", "enroll", "read", "vas", "vas-probe", "vas-capture", "wallet-demo", "test"],
+        choices=["doctor", "inspect", "enroll", "read", "vas", "vas-probe", "vas-capture", "issuer-vas", "wallet-demo", "test"],
     )
     parser.add_argument(
         "--device", help="nfcpy path, e.g. tty:usbserial-BG03MDLU:pn532"
@@ -109,7 +109,9 @@ def main():
         help="Disable experimental ECP; manually select and authenticate the NFC pass instead",
     )
     parser.add_argument("--pass-type-identifier", help="Exact identifier for a diagnostic NFC pass")
-    parser.add_argument("--out", help="New owner-only diagnostic capture JSON file")
+    parser.add_argument("--out", help="New owner-only diagnostic capture or issuer result JSON file")
+    parser.add_argument("--issuer", help="Issuer integration URL for issuer-vas")
+    parser.add_argument("--token-env", default="INSURANCE_READER_TOKEN", help="Clinic bearer-token environment variable for issuer-vas")
     args = parser.parse_args()
     if args.command == "vas-capture":
         if not args.pass_type_identifier or not args.out:
@@ -117,8 +119,11 @@ def main():
         from vas import get_data_payload
 
         get_data_payload(args.pass_type_identifier)
-    elif args.pass_type_identifier or args.out:
-        parser.error("--pass-type-identifier and --out are only available with vas-capture.")
+    elif args.command == "issuer-vas":
+        if not args.issuer or args.pass_type_identifier:
+            parser.error("issuer-vas requires --issuer and uses its configured pass identifier.")
+    elif args.pass_type_identifier or args.out or args.issuer:
+        parser.error("--pass-type-identifier is for vas-capture; --issuer is for issuer-vas; --out is available for either.")
     if args.command == "test":
         import unittest
 
@@ -127,9 +132,23 @@ def main():
             raise ValueError("Reader protocol tests failed.")
         return
     if args.timeout is None:
-        args.timeout = 30 if args.command.startswith("vas") else 60
+        args.timeout = 30 if args.command.startswith("vas") or args.command == "issuer-vas" else 60
     if not 0 < args.timeout <= 300:
         parser.error("--timeout must be between 0 and 300 seconds.")
+    if args.command == "issuer-vas":
+        from issuer import prepare_issuer, read_issuer, save_result
+
+        identifier, token = prepare_issuer(args)
+        path = device_path(args.device)
+        print(f"Opening {path}", flush=True)
+        with nfc.ContactlessFrontend(path) as reader:
+            print("Tap the issuer's NFC insurance pass.", flush=True)
+            result = read_issuer(args, reader, identifier, token)
+        if args.out:
+            save_result(args.out, result)
+            print(f"Full intake result saved privately to {args.out}.")
+        print("Issuer information received. No eligibility inquiry sent.")
+        return
     config = None
     if args.command in {"enroll", "read", "vas", "wallet-demo"}:
         config = request("/api/reader/config")

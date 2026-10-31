@@ -32,3 +32,6 @@ export type {
   WalletIssuer,
   WalletPassAssets,
 } from "./wallet";
+
+export { summarizeBenefits } from "./intake";
+export type { IntakeSummary, CoveragePeriod } from "./intake";

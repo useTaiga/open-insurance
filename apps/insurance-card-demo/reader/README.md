@@ -81,3 +81,16 @@ Decryption keys remain on the issuer backend. Missing passes, locked phones, mal
 - [ber-tlv](https://pypi.org/project/ber-tlv/) supplies BER-TLV parsing and serialization under MIT.
 
 The Python implementation is original code using the public protocol descriptions. No upstream ECP override or Proxmark3 source is copied into the project. Protocol fixtures cover request composition, the published VAS response shape, and rejection of locked, missing, malformed, duplicate, or incompatible responses. They are software tests, not a substitute for a physical read from an NFC-authorized Wallet pass.
+
+## Authenticated issuer integration
+
+`issuer-vas` targets the SDK issuer API instead of the local lab. It checks `/reader/config` before opening the reader, requires the configured NFC identity to be ready and submits the encrypted envelope with a clinic bearer token to `/clinic/vas`. No eligibility inquiry is sent. Non-loopback URLs require HTTPS, redirects are rejected and tokens are read from an environment variable rather than command arguments.
+
+```sh
+bun run --cwd apps/insurance-card-demo reader issuer-vas \
+  --issuer https://your-issuer.example \
+  --token-env INSURANCE_READER_TOKEN \
+  --out /private/new-intake-result.json
+```
+
+The result file contains the authorized insurance, complete supplied benefits, readable intake view and unsent request. It is owner-only and cannot overwrite an existing file. Without `--out`, patient details are not printed. The issuer must authorize this clinic for the resolved member; possession of a token or public NPI alone is insufficient. The [public pilot workflow](https://github.com/useTaiga/open-insurance/blob/main/docs/pilot.md) owns setup and verification. Existing diagnostic/lab commands are unchanged. This command does not certify the PN532 or enable an ordinary Wallet pass for NFC.
