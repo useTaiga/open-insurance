@@ -10,6 +10,13 @@ export type {
 } from "./contract";
 export { InsuranceCardIssuer, parseCardReference } from "./issuer";
 export type { CardStore, IssuedCard } from "./issuer";
+export { createInsurer } from "./insurer";
+export type {
+  InsurerOptions,
+  MemberData,
+  PayerBrand,
+  PayerDirectory,
+} from "./insurer";
 export { decryptVasData, parseVasReadInput } from "./vas";
 export type { DecryptedVasData, VasReadInput } from "./vas";
 export {

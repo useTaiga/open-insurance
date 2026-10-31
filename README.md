@@ -26,14 +26,32 @@ bun run reader test
 
 ## Issuer integration
 
-```ts
-import { InsuranceCardIssuer, createApplePassJson } from "@open-insurance/core";
+Install the source dependency in a Bun application:
 
-const issuer = new InsuranceCardIssuer();
-const card = issuer.issue(
+```sh
+bun add github:useTaiga/open-insurance
+```
+
+Pin the reviewed commit in your lockfile. This developer preview ships TypeScript source for Bun; it is not an npm release. The issuer API runs on your server, where Stedi credentials, Apple keys and enrollment records remain private.
+
+```ts
+import { createInsurer } from "open-insurance";
+import { createStediPayerDirectory } from "open-insurance/stedi";
+
+const insurer = await createInsurer({
+  payerId: "22099",
+  directory: createStediPayerDirectory({ apiKey: process.env.STEDI_API_KEY! }),
+  wallet: {
+    passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID!,
+    teamIdentifier: process.env.APPLE_TEAM_ID!,
+    // Include encryptionPublicKey only with Apple's NFC-enabled permission.
+  },
+  store: persistentCardStore,
+});
+
+// Fictional enrollment data; obtain real values from your member system.
+const card = insurer.issue(
   {
-    tradingPartnerServiceId: "00001",
-    tradingPartnerName: "Example Health",
     subscriber: {
       firstName: "CASEY",
       lastName: "MORGAN",
@@ -41,17 +59,17 @@ const card = issuer.issue(
       groupNumber: "000987",
     },
   },
-  new Date(Date.now() + 86_400_000)
+  coverageExpiresAt
 );
-
-const pass = createApplePassJson(card, {
-  organizationName: "Example Health",
-  passTypeIdentifier: "pass.example.insurance",
-  teamIdentifier: "EXAMPLE001",
-});
+const pkpass = await insurer.sign(card.message, signingCertificates);
+// Serve pkpass as application/vnd.apple.pkpass from your member portal.
 ```
 
-The example is unsigned. Signing requires an Apple-issued certificate and private key. Omitting `encryptionPublicKey` creates an ordinary Wallet pass with NFC disabled. Adding it requires Apple's NFC-authorized signing permission. Never use fictitious issuer metadata to claim a working signed pass.
+The payer ID selects the exact payer name and optional Stedi logo. Logos are converted to Wallet PNG assets at three resolutions. Fuzzy or ambiguous matches fail. Member input cannot change the configured payer. Supplying a payer ID does not verify that you represent that payer. The directory sends no patient data and does not forward credentials to the logo host. Stedi supplies no brand colors; insurers may set `wallet.branding` explicitly.
+
+Signing requires an Apple-issued certificate and private key. Omitting `encryptionPublicKey` creates an ordinary Wallet pass with NFC disabled. Adding it requires Apple's NFC-authorized signing permission. `insurer.pass(card.message)` returns unsigned JSON. Refresh long-lived insurer instances at least daily to keep payer metadata current, following [Stedi's directory guidance](https://www.stedi.com/docs/healthcare/api-reference/get-search-payers).
+
+`createInsurer()` composes independent primitives: `InsuranceCardIssuer`, `createApplePassJson()` and `signApplePass()`. Its `directory` accepts your own `PayerDirectory` implementation when your organization maintains its own brand registry. Within this checkout, the SDK workspace is `@open-insurance/core`; consumers installing the GitHub dependency import `open-insurance`.
 
 Issuer JSON can set `branding: {background: "#15463d", foreground: "#ffffff", label: "#bedece"}`. Run `bun run --cwd packages/insurance-card preview --insurance <JSON> --issuer <JSON> --out <new directory>` to render an unissued PNG/SVG concept. Add `--logo <PNG>` to embed a payer image from your authorized branding source. The same issuer colors are used in pass generation. Previews do not enable NFC or send any data.
 
@@ -60,9 +78,9 @@ The issuer maps authoritative enrollment data into `InsuranceData`, distributes 
 ## Clinic integration
 
 ```ts
-import { createEligibilityRequest } from "@open-insurance/core";
+import { createEligibilityRequest } from "open-insurance";
 
-const card = issuer.resolve(decryptedNfcMessage);
+const card = insurer.resolve(decryptedNfcMessage);
 const request = createEligibilityRequest(card.insurance, {
   billingProviderNpi: authenticatedClinicNpi,
   provider: { npi: authenticatedClinicNpi, organizationName: clinicName },
@@ -93,7 +111,7 @@ The lab reads `INSURANCE_CARD_ISSUER_FILE`, `INSURANCE_CARD_SIGNER_CERT`, `INSUR
 
 `signApplePass(card, issuer, certificates, assets)` accepts optional `logo`, `logo2x` and `logo3x` PNG buffers for issuer branding. Prepare correctly sized Apple Wallet logo assets before signing; preview images and signer assets are independent inputs.
 
-`InsuranceCardIssuer` defaults to memory. Bun applications can supply `SqliteCardStore` from `@open-insurance/core/sqlite`. `INSURANCE_CARD_STORE_FILE` configures it for the lab. Local SQLite storage is not a production resolver architecture.
+`InsuranceCardIssuer` defaults to memory. Bun applications can supply `SqliteCardStore` from `open-insurance/sqlite`. `INSURANCE_CARD_STORE_FILE` configures it for the lab. Local SQLite storage is not a production resolver architecture.
 
 ## Contract generation
 
