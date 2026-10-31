@@ -1,0 +1,54 @@
+# Issuer reference integration
+
+This is a local fictional member portal and clinic resolver. The insurer name and logo are illustrative; this is not an insurer partnership or a production service.
+
+```sh
+bun install
+bun run doctor
+bun run dev
+```
+
+Open http://127.0.0.1:4320. Choose Casey (policyholder) or Jamie (dependent). Preview the unsigned card, simulate a clinic read and inspect the complete supplied benefits. No Stedi request is sent. The SQLite store keeps card references and member mappings across restarts. Expired enrollment blocks reads. Revocation invalidates the old reference; the next member download issues a new one.
+
+## Connect your system
+
+1. Confirm `payerId` against your actual plan's routing. The presets are starting points; a brand may have multiple payer routes.
+2. Replace `loadEnrollment` in `enrollment.ts` with an authoritative lookup using an internal member key. Map the policyholder to `subscriber`; map a dependent patient to `dependents`. IDs stay strings. The SDK validates the complete contract. Attach complete benefits with original `asOf` and expiration; do not manufacture a fresh timestamp for an old response. Missing benefits clear the previous snapshot.
+3. Replace **both** authorization callbacks in `server.ts`. `authorizeMember` must return the member's verified internal key from your existing authenticated session. `authorizeClinic(request, memberKey)` must authenticate the clinic, authorize access to this member and return its verified billing NPI/provider context. Never trust a request body or a public NPI as authentication. The demo cookie and demo clinic header are deliberately fictional selectors.
+4. Add a link to `/member/pass.pkpass` in your authenticated member portal. Keep the preview and simulation behind your own developer access. Integrate coverage changes and termination events with `integration.revoke(memberKey)`.
+5. Use the documented `/clinic/vas` endpoint for encrypted Wallet reads once diagnostics pass. `/clinic/read` is an authenticated integration/simulation endpoint accepting the resolved opaque reference. Neither endpoint sends a paid eligibility inquiry. A clinic can explicitly submit the prepared request through its own authorized clearinghouse integration.
+
+## Configure Apple signing
+
+Edit `issuer.json`: replace the sample pass/team identifiers with your own Apple-issued identifiers. Keep `demo: true` for these fictional records. Add:
+
+```json
+"signing": {
+  "certificate": "/private/path/signer-cert.pem",
+  "privateKey": "/private/path/signer-key.pem",
+  "wwdr": "/private/path/wwdr.pem",
+  "passphraseEnvironment": "WALLET_KEY_PASSPHRASE"
+}
+```
+
+Omit `passphraseEnvironment` when the key has no passphrase. Paths may be absolute or relative to `issuer.json`. Run `bun run doctor` after changing credentials, then restart the server.
+
+The default project requests NFC. It includes a new P-256 encryption key pair, **not** Apple's NFC authorization. Signing stays blocked until the actual enhanced certificate, Apple chain, identity and reader key match. It never silently falls back to an ordinary pass. To explicitly test an ordinary pass first, remove only `wallet.encryptionPublicKey`; it will have no tap capability. Keep all private keys outside version control. Apple must authorize the issuing identity; the SDK cannot grant or transfer that permission.
+
+## Reader handoff
+
+The reader polls for `wallet.passTypeIdentifier`, then sends the raw encrypted VAS envelope to `POST /clinic/vas` using the clinic's authenticated session:
+
+```json
+{
+  "passTypeIdentifier": "pass.your.issuer",
+  "vasDataBase64": "<reader VAS ciphertext>",
+  "mobileTokenBase64": "<reader mobile token>"
+}
+```
+
+The resolver authenticates and decrypts the envelope, locates the member, authorizes that clinic and refreshes enrollment before returning insurance, full supplied benefits (or `null`), their validity window and an **unsent** eligibility request. Provider-specific benefits are withheld from other providers. Only a 36-byte opaque reference crosses NFC; benefits remain server-side. A captured reference is not proof of current physical presence. Deployment must define consent, reader authentication, timestamp/replay policy, patient matching, audit, rate limits and key lifecycle. The experimental PN532 reader is not a certified clinic product; the existing lab's backend protocol is separate from this integration endpoint.
+
+Before a live pilot: use issuer-owned Apple credentials and brand permission, authenticated production adapters, HTTPS, deployment-appropriate durable storage, revocation/update operations, operational monitoring and a verified physical NFC handoff. This localhost fixture does not implement those deployment controls. The offline checker does not check certificate revocation or establish production readiness.
+
+Measure engineering time to the first signed card and first encrypted physical read separately from Apple's approval wait. Keep fictional data until the issuer authorizes a scoped pilot.

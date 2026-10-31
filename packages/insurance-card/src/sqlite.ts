@@ -6,6 +6,8 @@ import { parseBenefitsSnapshot } from "./benefits";
 import { parseInsuranceData } from "./contract";
 import type { CardStore, IssuedCard } from "./issuer";
 
+export { SqliteMemberIndex } from "./sqlite-member-index";
+
 export class SqliteCardStore implements CardStore {
   readonly #database: Database;
 

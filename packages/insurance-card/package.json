@@ -9,7 +9,9 @@
     "./fixtures/vas": "./src/fixtures/vas.json",
     "./samples": "./src/samples.ts",
     "./sqlite": "./src/sqlite.ts",
-    "./stedi": "./src/stedi.ts"
+    "./stedi": "./src/stedi.ts",
+    "./integration": "./src/integration.ts",
+    "./setup": "./src/setup.ts"
   },
   "scripts": {
     "example": "bun examples/issuer.ts",
@@ -19,11 +21,14 @@
     "preview": "bun scripts/preview.ts",
     "prototypes": "bun scripts/prototypes.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "onboarding": "bun scripts/onboarding.ts"
   },
   "dependencies": {
+    "@peculiar/x509": "^3.1.0",
     "ajv": "^8.17.1",
     "passkit-generator": "^3.5.5",
+    "reflect-metadata": "^0.2.2",
     "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },

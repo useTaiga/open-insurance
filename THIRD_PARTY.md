@@ -1,5 +1,7 @@
 # Third-party components
 
+The bundled public Apple root certificates under `packages/insurance-card/assets/apple/` are downloaded from [Apple PKI](https://www.apple.com/certificateauthority/): [Apple Inc. Root](https://www.apple.com/appleca/AppleIncRootCertificate.cer), [G2](https://www.apple.com/certificateauthority/AppleRootCA-G2.cer) and [G3](https://www.apple.com/certificateauthority/AppleRootCA-G3.cer). They are trust anchors for offline signing diagnostics, not private keys or an Apple endorsement. Their inclusion does not grant NFC issuance permission.
+
 Original project code is MIT licensed. Dependency licenses remain their own; the MIT license does not relicense them.
 
 - The Python reader uses `nfcpy` (EUPL) and its dependencies as separately installed packages. Their source is not vendored here. Distribution of modified or bundled dependencies requires reviewing their licenses.

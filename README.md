@@ -30,6 +30,14 @@ For branded fictional Angle Health, Curative and Oscar Health bundles, run `bun 
 
 ## Use the SDK
 
+For a runnable issuer app with enrollment adapters, a Wallet button and an Apple setup checker, start with [issuer onboarding](docs/issuer-onboarding.md):
+
+```sh
+bun run onboarding init --payer angle --out /tmp/angle-insurance
+```
+
+The same command supports `curative` and `oscar`. It creates a fictional local reference; Apple credentials and production authentication are supplied by the issuer.
+
 In a separate Bun application:
 
 ```sh
@@ -45,6 +53,8 @@ Start with the complete [issuer example](packages/insurance-card/examples/issuer
 | Component | Behavior |
 | --- | --- |
 | Issuer SDK | Payer-bound issuance, opaque references, expiration, revocation and a replaceable card store. |
+| Issuer integration | Enrollment and authorization adapters, persistent member references, Wallet download and clinic resolver endpoints. |
+| Setup checker | Apple identity, certificate trust, NFC capability and reader key diagnostics; physical tap remains a separate test. |
 | Wallet preparation | Branded pass JSON and signing with your Apple credentials. Ordinary passes can omit NFC. |
 | Supplied benefits | Complete JSON with source, patient/payer binding, dates and optional provider context. |
 | Eligibility mapping | Stedi-shaped requests composed with the clinic's verified provider scope; no automatic sends. |
@@ -55,6 +65,7 @@ An issuer supplies authoritative member data, signing credentials and a resolver
 
 ## Guides
 
+- [Issuer onboarding](docs/issuer-onboarding.md): generate a reference app, replace adapters and diagnose Apple/NFC setup.
 - [Integration](docs/integration.md): issuer API, payer branding, benefits, clinic context and signing.
 - [Architecture and trust boundaries](docs/architecture.md): what crosses NFC, what stays on the server and what a deployment must supply.
 - [Lab and reader](apps/insurance-card-demo/README.md): software demo, optional hardware and diagnostic configuration.

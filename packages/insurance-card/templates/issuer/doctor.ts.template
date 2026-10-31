@@ -1,0 +1,8 @@
+import path from "node:path";
+import { inspectIssuerSetup, readIssuerSetup } from "open-insurance/setup";
+
+const filename = path.resolve("issuer.json");
+const setup = await readIssuerSetup(filename);
+const report = await inspectIssuerSetup(setup, path.dirname(filename));
+process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+process.exitCode = (report.nfcConfigured ? report.nfcReady : report.walletReady) ? 0 : 1;

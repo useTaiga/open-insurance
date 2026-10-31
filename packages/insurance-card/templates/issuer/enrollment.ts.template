@@ -1,0 +1,22 @@
+import { readFile } from "node:fs/promises";
+import { z } from "zod";
+import { parseInsuranceData } from "open-insurance";
+import type { Enrollment } from "open-insurance/integration";
+
+const enrollmentSchema = z.object({
+  member: z.object({ subscriber: z.unknown(), dependents: z.unknown().optional() }),
+  expiresAt: z.iso.datetime(),
+  benefits: z.unknown().optional(),
+});
+
+export const createEnrollmentLoader = (payerId: string, name: string) => async (memberKey: string): Promise<Enrollment | undefined> => {
+  const records = z.record(z.string(), enrollmentSchema).parse(
+    JSON.parse(await readFile(new URL("./enrollments.json", import.meta.url), "utf8"))
+  );
+  const record = records[memberKey];
+  if (!record) {
+    return undefined;
+  }
+  const insurance = parseInsuranceData({ ...record.member, tradingPartnerServiceId: payerId, tradingPartnerName: name });
+  return { ...record, member: { subscriber: insurance.subscriber, dependents: insurance.dependents }, expiresAt: new Date(record.expiresAt) };
+};

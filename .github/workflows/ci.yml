@@ -18,5 +18,16 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run check
       - run: bun run prototypes --out "$RUNNER_TEMP/open-insurance-prototypes"
+      - name: Verify detached issuer integration
+        run: |
+          bun run onboarding init --payer angle --out "$RUNNER_TEMP/issuer-reference" --sdk "file:$GITHUB_WORKSPACE"
+          cd "$RUNNER_TEMP/issuer-reference"
+          bun install
+          bun run typecheck
+          if bun run doctor > setup-report.json; then
+            echo "Unconfigured reference must report signing blocked"
+            exit 1
+          fi
+          python -c 'import json; r = json.load(open("setup-report.json")); assert r["walletReady"] is False and r["nfcReady"] is False and r["nfcConfigured"] is True'
       - run: bun run reader:setup
       - run: bun run reader test

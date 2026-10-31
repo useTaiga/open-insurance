@@ -1,0 +1,49 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { createIssuerIntegration } from "open-insurance/integration";
+import { readIssuerSetup } from "open-insurance/setup";
+import { SqliteCardStore, SqliteMemberIndex } from "open-insurance/sqlite";
+import { createEnrollmentLoader } from "./enrollment";
+
+const directory = import.meta.dir;
+const setup = await readIssuerSetup(path.join(directory, "issuer.json"));
+const database = path.join(directory, ".local/cards.sqlite");
+const integration = await createIssuerIntegration({
+  setup, directory,
+  cards: new SqliteCardStore(database),
+  members: new SqliteMemberIndex(database),
+  loadEnrollment: createEnrollmentLoader(setup.payerId, setup.name),
+  authorizeMember: async (request) => {
+    const member = new Bun.CookieMap(request.headers.get("cookie") ?? "").get("demo-member");
+    return member === "subscriber" || member === "dependent" ? member : undefined;
+  },
+  authorizeClinic: async (request) => request.headers.get("x-demo-clinic") === "fixture" ? {
+    billingProviderNpi: "1999999984",
+    provider: { npi: "1999999984", organizationName: "Fictional Example Clinic" },
+    encounter: { serviceTypeCodes: ["30"] },
+  } : undefined,
+});
+
+const portal = await readFile(new URL("./portal.html", import.meta.url), "utf8");
+const server = Bun.serve({
+  hostname: "127.0.0.1",
+  port: Number(process.env.PORT ?? 4320),
+  async fetch(request) {
+    const url = new URL(request.url);
+    if (request.method === "GET" && url.pathname === "/") {
+      return new Response(portal, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+    }
+    if (request.method === "GET" && url.pathname === "/api/setup") {
+      return Response.json({ name: setup.name, background: setup.wallet.branding?.background, report: integration.readiness }, { headers: { "cache-control": "no-store" } });
+    }
+    if (request.method === "POST" && url.pathname === "/demo/session") {
+      const member = await request.text();
+      if (member !== "subscriber" && member !== "dependent") {
+        return new Response("Choose a fictional member.", { status: 400 });
+      }
+      return new Response(null, { status: 204, headers: { "set-cookie": `demo-member=${member}; HttpOnly; SameSite=Strict; Path=/`, "cache-control": "no-store" } });
+    }
+    return integration.fetch(request);
+  },
+});
+process.stdout.write(`Fictional issuer reference: ${server.url}\nDemo identities only. Replace both authorization callbacks before integration.\n`);

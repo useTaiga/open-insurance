@@ -1,5 +1,7 @@
 # Integration
 
+For a runnable portal and resolver with enrollment/session adapters and signing diagnostics, start with [issuer onboarding](issuer-onboarding.md). The primitives below remain available independently.
+
 See [architecture](architecture.md) for ownership, reader trust and deployment boundaries. Run all commands from the repository root.
 
 ## Issuer configuration

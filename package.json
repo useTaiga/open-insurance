@@ -3,14 +3,18 @@
     "url": "https://github.com/useTaiga/open-insurance/issues"
   },
   "dependencies": {
+    "@peculiar/x509": "^3.1.0",
     "ajv": "^8.17.1",
     "passkit-generator": "^3.5.5",
+    "reflect-metadata": "^0.2.2",
     "sharp": "^0.35.5",
     "zod": "^4.6.7"
   },
   "description": "Open-source Wallet insurance intake SDK and experimental NFC reader, created by Taiga.",
   "exports": {
     ".": "./packages/insurance-card/src/index.ts",
+    "./integration": "./packages/insurance-card/src/integration.ts",
+    "./setup": "./packages/insurance-card/src/setup.ts",
     "./sqlite": "./packages/insurance-card/src/sqlite.ts",
     "./stedi": "./packages/insurance-card/src/stedi.ts"
   },
@@ -18,6 +22,7 @@
     "packages/insurance-card/src",
     "packages/insurance-card/assets",
     "packages/insurance-card/examples",
+    "packages/insurance-card/templates",
     "docs",
     "CONTRIBUTING.md",
     "SECURITY.md",
@@ -43,6 +48,7 @@
     "check": "bun run test && bun run typecheck && bun run example",
     "dev": "bun run --cwd apps/insurance-card-demo dev",
     "example": "bun packages/insurance-card/examples/issuer.ts",
+    "onboarding": "bun run --cwd packages/insurance-card onboarding",
     "prototypes": "bun run --cwd packages/insurance-card prototypes",
     "reader": "bun run --cwd apps/insurance-card-demo reader",
     "reader:setup": "bun run --cwd apps/insurance-card-demo reader:setup",

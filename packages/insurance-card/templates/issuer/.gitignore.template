@@ -1,0 +1,8 @@
+node_modules/
+.local/
+*.pem
+*.p12
+*.pkpass
+.env*
+issuer.json
+enrollments.json
