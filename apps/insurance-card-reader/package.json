@@ -1,0 +1,24 @@
+{
+  "name": "open-insurance-reader",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "ios:assets": "bun scripts/generate-assets.ts",
+    "ios:generate": "xcodegen generate",
+    "ios:format": "swift format format --in-place --recursive Reader ReaderCore/Package.swift ReaderCore/Sources ReaderCore/Tests",
+    "ios:lint": "swift format lint --strict --recursive Reader ReaderCore/Package.swift ReaderCore/Sources ReaderCore/Tests",
+    "ios:build": "bun run ios:generate && xcodebuild -project InsuranceReader.xcodeproj -scheme InsuranceReader -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath .build CODE_SIGNING_ALLOWED=NO build",
+    "ios:check-device": "bun run ios:generate && xcodebuild -project InsuranceReader.xcodeproj -scheme InsuranceReader -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath .build-device CODE_SIGNING_ALLOWED=NO build",
+    "ios:launch": "bun run ios:build && xcrun simctl bootstatus 'iPhone 17 Pro' -b && xcrun simctl install 'iPhone 17 Pro' .build/Build/Products/Debug-iphonesimulator/InsuranceReader.app && xcrun simctl launch 'iPhone 17 Pro' org.openinsurance.reader.demo",
+    "ios:test": "swift test --package-path ReaderCore",
+    "ios:test:integration": "READER_TEST_SERVER_URL=http://127.0.0.1:4320 swift test --package-path ReaderCore",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.5",
+    "sharp": "^0.35.5",
+    "typescript": "^6.0.3"
+  }
+}

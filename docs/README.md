@@ -8,5 +8,6 @@
 - [Partner prototypes](partner-prototypes.md): fictional Angle, Curative and Oscar bundles and optional Wallet test passes.
 - [Lab](../apps/insurance-card-demo/README.md): local software and linked badge configuration.
 - [Reader](../apps/insurance-card-demo/reader/README.md): PN532 wiring, installation and diagnostics.
+- [iPhone reader](../apps/insurance-card-reader/README.md): SwiftUI client, Simulator setup and NFC requirements.
 - [Contributing](../CONTRIBUTING.md): development and verification.
 - [Security](../SECURITY.md): private vulnerability reporting.

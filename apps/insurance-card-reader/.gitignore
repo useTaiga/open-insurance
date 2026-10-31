@@ -1,0 +1,5 @@
+InsuranceReader.xcodeproj/
+.build/
+.build-device/
+ReaderCore/.build/
+xcuserdata/

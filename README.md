@@ -62,6 +62,7 @@ Start with the complete [issuer example](packages/insurance-card/examples/issuer
 | Eligibility mapping | Stedi-shaped requests composed with the clinic's verified provider scope; no automatic sends. |
 | Local lab | Fictional cards, simulated reads, benefits export and optional local signing. |
 | PN532 reader | Experimental Apple VAS polling and decryption, with offline protocol fixtures. |
+| iPhone reader | Experimental SwiftUI client for simulated results, demo references and an Apple-gated Core NFC VAS adapter. |
 
 An issuer supplies authoritative member data, signing credentials and a resolver. A clinic supplies authentication, patient matching and its intake integration. There is no universal issuer directory, hosted service, EHR connector or production access-control layer in this repository.
 
@@ -73,6 +74,7 @@ An issuer supplies authoritative member data, signing credentials and a resolver
 - [Integration](docs/integration.md): issuer API, payer branding, benefits, clinic context and signing.
 - [Architecture and trust boundaries](docs/architecture.md): what crosses NFC, what stays on the server and what a deployment must supply.
 - [Lab and reader](apps/insurance-card-demo/README.md): software demo, optional hardware and diagnostic configuration.
+- [iPhone reader](apps/insurance-card-reader/README.md): Simulator setup, native checks and signing/NFC requirements.
 - [Contributing](CONTRIBUTING.md): local commands and contribution scope.
 - [Security reporting](SECURITY.md): report vulnerabilities privately using fictional reproductions.
 
