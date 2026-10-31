@@ -10,6 +10,8 @@ export type {
 } from "./contract";
 export { InsuranceCardIssuer, parseCardReference } from "./issuer";
 export type { CardStore, IssuedCard } from "./issuer";
+export { parseBenefitsSnapshot, readCardBenefits } from "./benefits";
+export type { BenefitsSnapshot } from "./benefits";
 export { createInsurer } from "./insurer";
 export type {
   InsurerOptions,

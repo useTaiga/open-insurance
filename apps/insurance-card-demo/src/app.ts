@@ -260,6 +260,23 @@ const refresh = async () => {
   );
   showRequest(next.request);
   renderDemo(next);
+  const benefits = next.readerResult?.benefits;
+  element("benefits-panel", HTMLElement).hidden = benefits === undefined;
+  if (benefits !== undefined) {
+    show(
+      "benefits-status",
+      {
+        expired: "Expired snapshot",
+        "not-yet-valid": "Snapshot not yet valid",
+        "within-validity": "Within supplied validity window",
+      }[benefits.freshness]
+    );
+    show(
+      "benefits-provenance",
+      `${benefits.snapshot.source === "issuer" ? "Issuer-provided" : "Saved Stedi response"} · As of ${benefits.snapshot.asOf} · Expires ${benefits.snapshot.expiresAt}${benefits.snapshot.providerNpi === undefined ? "" : ` · Provider ${benefits.snapshot.providerNpi}`}`
+    );
+    show("benefits-json", JSON.stringify(benefits.snapshot.data, null, 2));
+  }
   button("wallet-download").disabled =
     !next.walletReady || next.currentCard === undefined || next.revoked;
   let walletStatus = "Unsigned preview · Wallet signing is not configured";
@@ -303,7 +320,23 @@ message.addEventListener("input", updateBytes);
 button("issue").addEventListener("click", () => {
   void action(button("issue"), async () => {
     const input: unknown = JSON.parse(insurance.value);
-    await api("/api/issue", input);
+    const issued = await api<{ card: IssuedCard }>("/api/issue", input);
+    if (
+      element("include-benefits", HTMLInputElement).checked &&
+      state !== undefined
+    ) {
+      await api("/api/benefits", {
+        message: issued.card.message,
+        snapshot: {
+          asOf: new Date().toISOString(),
+          data: state.samples.benefitsData,
+          expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+          format: "stedi-eligibility-legacy",
+          insurance: issued.card.insurance,
+          source: "issuer",
+        },
+      });
+    }
     await refresh();
   });
 });
@@ -342,6 +375,11 @@ button("insurance-download").addEventListener("click", () => {
     tradingPartnerName: prepared.tradingPartnerName,
     tradingPartnerServiceId: prepared.tradingPartnerServiceId,
   });
+});
+button("benefits-download").addEventListener("click", () => {
+  if (state?.readerResult?.benefits !== undefined) {
+    download("benefits-snapshot.json", state.readerResult.benefits.snapshot);
+  }
 });
 button("copy").addEventListener("click", () => {
   void action(button("copy"), async () => {

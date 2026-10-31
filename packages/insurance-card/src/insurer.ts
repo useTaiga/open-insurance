@@ -65,7 +65,9 @@ export const createInsurer = async (options: InsurerOptions) => {
     return card;
   };
   return {
-    issue(member: MemberData, expiresAt: Date) {
+    benefits: (message: unknown, providerNpi?: string) =>
+      issuer.benefits(resolve(message).message, providerNpi),
+    issue(member: MemberData, expiresAt: Date, benefits?: unknown) {
       const insurance = {
         tradingPartnerName: payer.name,
         tradingPartnerServiceId: payer.payerId,
@@ -77,7 +79,7 @@ export const createInsurer = async (options: InsurerOptions) => {
       ) {
         throw new Error("Member data cannot override the configured payer.");
       }
-      return issuer.issue(insurance, expiresAt);
+      return issuer.issue(insurance, expiresAt, benefits);
     },
     pass: (message: unknown) => createApplePassJson(resolve(message), wallet),
     get payer(): PayerBrand {
@@ -88,6 +90,8 @@ export const createInsurer = async (options: InsurerOptions) => {
     },
     resolve,
     revoke: (message: unknown) => issuer.revoke(resolve(message).message),
+    setBenefits: (message: unknown, value: unknown) =>
+      issuer.setBenefits(resolve(message).message, value),
     sign: async (message: unknown, certificates: SigningCertificates) =>
       await signApplePass(resolve(message), wallet, certificates, assets),
   };

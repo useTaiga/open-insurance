@@ -1,5 +1,7 @@
 import { randomBytes } from "node:crypto";
 
+import { parseBenefitsSnapshot, readCardBenefits } from "./benefits";
+import type { BenefitsSnapshot } from "./benefits";
 import { parseInsuranceData } from "./contract";
 import type { InsuranceData } from "./contract";
 
@@ -15,6 +17,7 @@ export interface IssuedCard {
   message: string;
   expiresAt: string;
   insurance: InsuranceData;
+  benefits?: BenefitsSnapshot;
 }
 
 export interface CardStore {
@@ -30,13 +33,17 @@ export class InsuranceCardIssuer {
     this.#cards = store;
   }
 
-  issue(data: unknown, expiresAt: Date): IssuedCard {
+  issue(data: unknown, expiresAt: Date, benefits?: unknown): IssuedCard {
     if (!(expiresAt.getTime() > Date.now())) {
       throw new Error("The card expiry must be a future date.");
     }
+    const insurance = parseInsuranceData(data);
     const card = {
+      ...(benefits === undefined
+        ? {}
+        : { benefits: parseBenefitsSnapshot(benefits, insurance) }),
       expiresAt: expiresAt.toISOString(),
-      insurance: parseInsuranceData(data),
+      insurance,
       message: `ic1_${randomBytes(24).toString("base64url")}`,
     };
     this.#cards.set(card.message, card);
@@ -53,5 +60,16 @@ export class InsuranceCardIssuer {
 
   revoke(message: unknown): boolean {
     return this.#cards.delete(parseCardReference(message));
+  }
+
+  setBenefits(message: unknown, value: unknown): IssuedCard {
+    const card = this.resolve(message);
+    card.benefits = parseBenefitsSnapshot(value, card.insurance);
+    this.#cards.set(card.message, card);
+    return structuredClone(card);
+  }
+
+  benefits(message: unknown, providerNpi?: string) {
+    return readCardBenefits(this.resolve(message), providerNpi);
   }
 }

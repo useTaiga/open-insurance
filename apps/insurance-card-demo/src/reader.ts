@@ -1,4 +1,5 @@
 import type { EligibilityRequest, IssuedCard } from "@open-insurance/core";
+import { readCardBenefits } from "@open-insurance/core";
 import type { EligibilityResult as ReaderEligibility } from "@open-insurance/contracts/eligibility-result";
 
 export type SimulationScenario = "active" | "inactive" | "rejected";
@@ -12,6 +13,7 @@ export interface ReaderResult {
   request: EligibilityRequest;
   memberName: string;
   eligibility?: ReaderEligibility;
+  benefits?: ReturnType<typeof readCardBenefits>;
 }
 
 export const preparedReaderResult = (
@@ -20,6 +22,9 @@ export const preparedReaderResult = (
 ): ReaderResult => {
   const patient = card.insurance.dependents?.[0] ?? card.insurance.subscriber;
   return {
+    ...(card.benefits === undefined
+      ? {}
+      : { benefits: readCardBenefits(card, request.provider.npi) }),
     memberName:
       [patient.firstName, patient.lastName].filter(Boolean).join(" ") ||
       "Member",

@@ -75,6 +75,33 @@ Issuer JSON can set `branding: {background: "#15463d", foreground: "#ffffff", la
 
 The issuer maps authoritative enrollment data into `InsuranceData`, distributes its pass through the member portal, and operates a resolver with update/revocation support. Member/group identifiers remain strings. Subscriber/dependent fields use the bundled Stedi legacy eligibility request contract without renaming or coercion. Ship a versioned adapter when changing clearinghouse contracts.
 
+## Benefits without a new check
+
+Attach a complete JSON object from the insurer's member system or an existing Stedi response:
+
+```ts
+insurer.setBenefits(card.message, {
+  source: "issuer", // "stedi" identifies a saved Stedi response.
+  format: "stedi-eligibility-legacy",
+  insurance: card.insurance,
+  asOf: observedAt.toISOString(),
+  expiresAt: benefitsValidUntil.toISOString(),
+  data: completeBenefitsJson,
+});
+
+const supplied = insurer.benefits(decryptedNfcMessage, authenticatedClinicNpi);
+```
+
+The reader can display `supplied.snapshot.data` immediately. Every JSON field is retained, including nested and unknown benefit details. A new Stedi inquiry is optional. Updating benefits changes the server record, so the member does not need a new Wallet card for each update.
+
+Snapshots bind to the exact payer, subscriber and dependent on the card. Set `providerNpi` when a saved response belongs to a specific provider; readers must supply that matching context. The issuer is responsible for attaching the correct response and operating an authenticated resolver. Source and format are supplied metadata, not a verified payer attestation.
+
+The envelope includes its source, UTC `asOf` and expiration. Reads report `within-validity`, `expired` or `not-yet-valid`. These labels describe the supplied window; they do not establish current visit-specific coverage. An expired snapshot stays available as historical information. A caller may explicitly refresh it through the insurer or its clearinghouse.
+
+Only a reference crosses Wallet NFC. The complete JSON is retrieved from the issuer's authorized service. A benefits object is too large for [Wallet's 64-byte NFC message](https://developer.apple.com/documentation/walletpasses/pass/nfc-data.dictionary).
+
+In the lab, leave “Include fictional issuer benefits” checked, issue a card and simulate its read. The supplied-benefits panel shows the complete object, timestamps and export. The optional inquiry remains unsent. No patient data or vendor API key is needed.
+
 ## Clinic integration
 
 ```ts
@@ -88,7 +115,7 @@ const request = createEligibilityRequest(card.insurance, {
 });
 ```
 
-Obtain the clinic NPI from an authenticated authorization boundary. NPI equality is not authentication. The credential identifies coverage; retrieve current eligibility for the visit through your authorized clearinghouse integration. The lab intentionally has no paid send endpoint.
+Obtain the clinic NPI from an authenticated authorization boundary. NPI equality is not authentication. The credential identifies coverage. Read supplied benefits when available; request a fresh visit-specific response through an authorized issuer or clearinghouse integration when needed. The lab intentionally has no paid send endpoint.
 
 ## Wallet and NFC lab
 

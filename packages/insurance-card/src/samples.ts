@@ -1,5 +1,7 @@
 import type { ClinicContext, InsuranceData } from "./contract";
 
+export { default as benefitsDataSample } from "./fixtures/benefits.json";
+
 export const subscriberSample: InsuranceData = {
   subscriber: {
     dateOfBirth: "19850527",

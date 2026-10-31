@@ -1,8 +1,59 @@
 import { expect, test } from "bun:test";
 
-import { dependentSample, clinicSample } from "@open-insurance/core/samples";
+import {
+  dependentSample,
+  clinicSample,
+  benefitsDataSample,
+} from "@open-insurance/core/samples";
+import { z } from "zod";
 
 import { createDemo } from "./server";
+
+test("a read returns all supplied benefits without sending an inquiry and rejects another provider context", async () => {
+  const app = createDemo();
+  const post = async (path: string, input: unknown) =>
+    await app.fetch(
+      new Request(`http://localhost${path}`, {
+        body: JSON.stringify(input),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      })
+    );
+  const issuedResponse = await post("/api/issue", dependentSample);
+  const issued = z
+    .object({ card: z.object({ message: z.string() }) })
+    .parse(await issuedResponse.json());
+  const snapshot = {
+    asOf: "2020-01-01T00:00:00Z",
+    data: benefitsDataSample,
+    expiresAt: "2020-01-02T00:00:00Z",
+    format: "stedi-eligibility-legacy",
+    insurance: dependentSample,
+    source: "issuer",
+  };
+  const attached = await post("/api/benefits", {
+    message: issued.card.message,
+    snapshot,
+  });
+  expect(attached.status).toBe(200);
+  const read = await post("/api/reader/read", { message: issued.card.message });
+  expect(await read.json()).toMatchObject({
+    benefits: { freshness: "expired", snapshot },
+    sent: false,
+  });
+  await post("/api/benefits", {
+    message: issued.card.message,
+    snapshot: { ...snapshot, providerNpi: "1023169455" },
+  });
+  const rejected = await post("/api/reader/read", {
+    message: issued.card.message,
+  });
+  expect(rejected.status).toBe(400);
+  const stateResponse = await app.fetch(
+    new Request("http://localhost/api/state")
+  );
+  expect(await stateResponse.json()).not.toHaveProperty("readerResult");
+});
 
 test("an unsigned Wallet preview cannot be downloaded as an installable pass", async () => {
   const app = createDemo();

@@ -1,0 +1,25 @@
+{
+  "payer": { "name": "Example Health · Synthetic" },
+  "subscriber": { "memberId": "0000123456", "groupNumber": "000987" },
+  "benefitsInformation": [
+    {
+      "code": "B",
+      "name": "Co-Payment",
+      "benefitAmount": "25.00",
+      "serviceTypeCodes": ["98"],
+      "serviceTypes": ["Professional (Physician) Visit - Office"],
+      "inPlanNetworkIndicator": "Yes",
+      "additionalInformation": [
+        { "description": "Fictional benefit supplied by the demo issuer." }
+      ]
+    },
+    {
+      "code": "C",
+      "name": "Deductible",
+      "benefitAmount": "750.00",
+      "serviceTypeCodes": ["30"],
+      "timeQualifier": "Remaining",
+      "benefitsDateInformation": { "benefitBegin": "20260101" }
+    }
+  ]
+}

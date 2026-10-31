@@ -130,6 +130,14 @@ label {
   font-weight: 550;
   margin: 18px 0 8px;
 }
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.checkbox-label input {
+  width: auto;
+}
 select,
 input,
 textarea,

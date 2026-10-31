@@ -12,6 +12,7 @@ import {
 import type { EligibilityRequest, IssuedCard } from "@open-insurance/core";
 import {
   clinicSample,
+  benefitsDataSample,
   dependentSample,
   subscriberSample,
 } from "@open-insurance/core/samples";
@@ -39,6 +40,7 @@ export interface DemoState {
   tagLinked: boolean;
   revoked: boolean;
   samples: {
+    benefitsData: typeof benefitsDataSample;
     dependent: typeof dependentSample;
     subscriber: typeof subscriberSample;
   };
@@ -201,6 +203,7 @@ export const createDemo = (
             request,
             revoked,
             samples: {
+              benefitsData: benefitsDataSample,
               dependent: dependentSample,
               subscriber: subscriberSample,
             },
@@ -350,7 +353,8 @@ export const createDemo = (
         request = createEligibilityRequest(card.insurance, clinicSample);
         currentCard = card;
         revoked = false;
-        return Response.json(preparedReaderResult(card, request));
+        readerResult = preparedReaderResult(card, request);
+        return Response.json(readerResult);
       }
       if (
         pathname === "/api/reader/tag/enroll" ||
@@ -379,7 +383,8 @@ export const createDemo = (
         currentCard = card;
         revoked = false;
         request = createEligibilityRequest(card.insurance, clinicSample);
-        return Response.json(preparedReaderResult(card, request));
+        readerResult = preparedReaderResult(card, request);
+        return Response.json(readerResult);
       }
       if (pathname === "/api/reader/simulate") {
         const scenario =
@@ -421,10 +426,26 @@ export const createDemo = (
         input !== null && typeof input === "object" && "message" in input
           ? input.message
           : undefined;
+      if (pathname === "/api/benefits") {
+        if (
+          input === null ||
+          typeof input !== "object" ||
+          !("snapshot" in input)
+        ) {
+          throw new Error("Provide a benefits snapshot.");
+        }
+        currentCard = issuer.setBenefits(message, input.snapshot);
+        readerResult = undefined;
+        return Response.json({ card: currentCard, sent: false });
+      }
       if (pathname === "/api/tap") {
         const card = issuer.resolve(message);
         request = createEligibilityRequest(card.insurance, clinicSample);
+        readerResult = preparedReaderResult(card, request);
         return Response.json({
+          ...(readerResult.benefits === undefined
+            ? {}
+            : { benefits: readerResult.benefits }),
           message: card.message,
           request,
           sent: false,
@@ -434,7 +455,8 @@ export const createDemo = (
       if (pathname === "/api/reader/read") {
         const card = issuer.resolve(message);
         request = createEligibilityRequest(card.insurance, clinicSample);
-        return Response.json(preparedReaderResult(card, request));
+        readerResult = preparedReaderResult(card, request);
+        return Response.json(readerResult);
       }
       if (pathname === "/api/revoke") {
         issuer.revoke(message);

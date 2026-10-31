@@ -21,8 +21,8 @@
           From wallet to eligibility.<br />Every field stays the same.
         </h1>
         <p id="lab-description">
-          An issuer creates the card. A tap resolves its reference. The clinic
-          adds its provider and services to prepare a Stedi inquiry.
+          An issuer creates the card. A tap retrieves insurance and supplied
+          benefits. A new eligibility inquiry is optional.
         </p>
       </section>
       <div id="error" role="alert" hidden></div>
@@ -103,6 +103,10 @@
             <code>subscriber</code>. Each inquiry supports one dependent.
           </p>
           <button id="issue" class="primary">Issue demo card</button>
+          <label class="checkbox-label"
+            ><input id="include-benefits" type="checkbox" checked /> Include
+            fictional issuer benefits</label
+          >
         </section>
         <section class="panel wallet-panel">
           <div class="section-heading">
@@ -165,11 +169,26 @@
           </details>
         </section>
       </div>
+      <section class="panel result-panel" id="benefits-panel" hidden>
+        <div class="section-heading">
+          <h2>Supplied benefits</h2>
+          <span id="benefits-status" class="badge"></span>
+        </div>
+        <p id="benefits-provenance" class="hint"></p>
+        <p class="hint">
+          These benefits were supplied with the card record. This tap sends no
+          eligibility inquiry. Amounts may depend on the provider and services.
+        </p>
+        <pre id="benefits-json"></pre>
+        <button id="benefits-download" class="secondary">
+          Export complete benefits
+        </button>
+      </section>
       <section class="panel result-panel" id="request-panel">
         <div class="section-heading">
           <div>
             <p class="step">03 / CLINIC</p>
-            <h2>The exact Stedi request</h2>
+            <h2>Optional eligibility inquiry</h2>
           </div>
           <span id="request-status" class="badge">Waiting for a card read</span>
         </div>
