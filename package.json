@@ -1,0 +1,18 @@
+{
+  "license": "MIT",
+  "name": "open-insurance",
+  "packageManager": "bun@1.4.4",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --cwd apps/insurance-card-demo dev",
+    "reader": "bun run --cwd apps/insurance-card-demo reader",
+    "reader:setup": "bun run --cwd apps/insurance-card-demo reader:setup",
+    "test": "bun run --cwd packages/insurance-card test && bun run --cwd apps/insurance-card-demo test",
+    "typecheck": "bun run --cwd packages/insurance-card typecheck && bun run --cwd packages/contracts typecheck && bun run --cwd apps/insurance-card-demo typecheck"
+  },
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
+}

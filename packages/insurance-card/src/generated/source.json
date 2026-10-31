@@ -1,0 +1,6 @@
+{
+  "operation": "EligibilityCheck",
+  "sha256": "4dde1f38772a26a97b19991b9d8474758c2748e1420708b25b8324d94ed2ddcd",
+  "source": "healthcare.json",
+  "version": "2024-04-01"
+}

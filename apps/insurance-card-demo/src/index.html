@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Open Insurance · Issuer lab</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" type="module"></script>
+  </head>
+  <body>
+    <header>
+      <a href="/" class="brand">Open Insurance<span>Issuer lab</span></a
+      ><span class="badge" id="data-mode"
+        >Local prototype · synthetic data</span
+      >
+    </header>
+    <main>
+      <section class="intro">
+        <p class="eyebrow">A common insurance card</p>
+        <h1 id="lab-title">
+          From wallet to eligibility.<br />Every field stays the same.
+        </h1>
+        <p id="lab-description">
+          An issuer creates the card. A tap resolves its reference. The clinic
+          adds its provider and services to prepare a Stedi inquiry.
+        </p>
+      </section>
+      <div id="error" role="alert" hidden></div>
+      <section
+        class="panel tap-panel"
+        id="demo-panel"
+        hidden
+        aria-labelledby="demo-title"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="step" id="demo-kind">
+              NFC TEST PASS / SYNTHETIC INSURANCE
+            </p>
+            <h2 id="demo-title">Tap to check in</h2>
+          </div>
+          <label class="sample-label" id="demo-scenario-field"
+            >Sample outcome
+            <select id="demo-scenario">
+              <option value="active">Active coverage</option>
+              <option value="inactive">Inactive coverage</option>
+              <option value="rejected">Payer rejection</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint" id="demo-instructions">
+          Open the linked NFC Test Pass in Wallet and hold the top of your
+          iPhone near the reader. This badge identifies a synthetic member; it
+          contains no insurance.
+        </p>
+        <p id="demo-reader-status" role="status" aria-live="polite">
+          Ready for the reader.
+        </p>
+        <p class="hint" id="demo-notice">
+          All coverage and benefit values are invented examples. No Stedi
+          inquiry is sent and no amount shown is due.
+        </p>
+        <div id="demo-result" hidden>
+          <div class="section-heading">
+            <div>
+              <h3 id="demo-member"></h3>
+              <p class="hint" id="demo-plan"></p>
+            </div>
+            <span class="badge" id="demo-coverage"></span>
+          </div>
+          <dl class="benefits-grid" id="demo-insurance"></dl>
+          <h3 id="demo-benefits-title">Sample benefits</h3>
+          <dl class="benefits-grid" id="demo-benefits"></dl>
+          <p id="demo-payer-message"></p>
+        </div>
+      </section>
+      <div class="layout" id="issuer-tools">
+        <section class="panel issuer-panel">
+          <div class="section-heading">
+            <div>
+              <p class="step">01 / INSURER</p>
+              <h2>Issue a card</h2>
+            </div>
+            <label class="sample-label"
+              >Example<select id="sample">
+                <option value="subscriber">Subscriber</option>
+                <option value="dependent">Dependent</option>
+              </select></label
+            >
+          </div>
+          <p class="hint">
+            Use Stedi’s field names and YYYYMMDD dates. Names, IDs, groups, and
+            dependent details are preserved verbatim.
+          </p>
+          <label for="insurance">Insurance data</label
+          ><textarea
+            id="insurance"
+            spellcheck="false"
+            aria-describedby="input-help"
+          ></textarea>
+          <p class="hint" id="input-help">
+            A dependent with their own unique member ID belongs in
+            <code>subscriber</code>. Each inquiry supports one dependent.
+          </p>
+          <button id="issue" class="primary">Issue demo card</button>
+        </section>
+        <section class="panel wallet-panel">
+          <div class="section-heading">
+            <div>
+              <p class="step">02 / WALLET & READER</p>
+              <h2>Your insurance card</h2>
+            </div>
+          </div>
+          <p id="tag-status" class="hint">
+            No physical tag linked to this card
+          </p>
+          <div class="wallet-card">
+            <div class="wallet-top">
+              <strong>Example Health</strong><span>INSURANCE</span>
+            </div>
+            <p class="card-label">MEMBER</p>
+            <p id="member-name" class="member-name">Your member’s card</p>
+            <div class="card-bottom">
+              <div>
+                <p class="card-label">MEMBER ID</p>
+                <p id="member-id">—</p>
+              </div>
+              <div>
+                <p class="card-label">GROUP</p>
+                <p id="group">—</p>
+              </div>
+            </div>
+            <div class="wallet-foot">
+              Open Insurance<span id="card-status">Not issued</span>
+            </div>
+          </div>
+          <p id="wallet-status" class="hint">
+            Wallet signing is not configured
+          </p>
+          <button id="wallet-download" class="primary" disabled>
+            Download Wallet test card
+          </button>
+          <label for="message"
+            >NFC message
+            <span id="bytes" class="muted">0 / 64 bytes</span></label
+          ><input
+            id="message"
+            autocomplete="off"
+            placeholder="Issue a card to create its reference"
+          />
+          <p class="hint">
+            Only the opaque reference goes over NFC. Insurance details stay with
+            the issuer’s resolver.
+          </p>
+          <div class="buttons">
+            <button id="tap" class="primary" disabled>Simulate NFC read</button
+            ><button id="revoke" class="secondary" disabled>Revoke card</button>
+          </div>
+          <details>
+            <summary>Apple pass.json</summary>
+            <pre id="pass">Issue a card to preview its pass.</pre>
+            <button id="download" class="secondary" disabled>
+              Download unsigned pass.json
+            </button>
+          </details>
+        </section>
+      </div>
+      <section class="panel result-panel" id="request-panel">
+        <div class="section-heading">
+          <div>
+            <p class="step">03 / CLINIC</p>
+            <h2>The exact Stedi request</h2>
+          </div>
+          <span id="request-status" class="badge">Waiting for a card read</span>
+        </div>
+        <p class="hint">
+          Insurance fields come from the card. <code>provider</code> and
+          <code>encounter</code> come from the clinic. This demo prepares the
+          inquiry and sends no eligibility requests.
+        </p>
+        <pre id="request">Read a card reference to prepare the request.</pre>
+        <div class="buttons">
+          <button id="insurance-download" class="secondary" disabled>
+            Export insurance
+          </button>
+          <button id="copy" class="secondary" disabled>Copy request JSON</button
+          ><button id="request-download" class="secondary" disabled>
+            Download request JSON
+          </button>
+        </div>
+      </section>
+      <footer>
+        Prototype scope: token issuance, resolution, revocation, Apple pass
+        preparation, physical NFC tag linking, and Stedi request composition.
+        Apple Wallet NFC and live eligibility remain separate integration steps.
+      </footer>
+    </main>
+  </body>
+</html>

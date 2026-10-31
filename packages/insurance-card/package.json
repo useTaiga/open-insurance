@@ -1,0 +1,33 @@
+{
+  "name": "@open-insurance/core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fixtures/vas": "./src/fixtures/vas.json",
+    "./samples": "./src/samples.ts",
+    "./sqlite": "./src/sqlite.ts"
+  },
+  "scripts": {
+    "generate:assets": "bun scripts/generate-assets.ts",
+    "generate:stedi": "bun scripts/generate-stedi.ts",
+    "insurance-card": "bun src/cli.ts",
+    "preview": "bun scripts/preview.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "passkit-generator": "^3.5.5"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.5",
+    "openapi-typescript": "^7.13.0",
+    "oxfmt": "^0.75.0",
+    "typescript": "^6.0.3"
+  }
+}

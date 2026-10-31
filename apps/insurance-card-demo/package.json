@@ -1,0 +1,23 @@
+{
+  "name": "open-insurance-demo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --watch src/server.ts",
+    "reader": "\"${NFC_READER_PYTHON:-.venv/bin/python}\" reader/main.py",
+    "reader:setup": "python3 -m venv .venv && .venv/bin/python -m pip install -r reader/requirements.txt",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.6.7",
+    "@open-insurance/core": "workspace:*",
+    "@open-insurance/contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.4",
+    "@types/node": "^26.6.5",
+    "typescript": "^6.0.3"
+  }
+}

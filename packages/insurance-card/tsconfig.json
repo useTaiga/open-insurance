@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "types": [
+      "bun",
+      "node"
+    ]
+  },
+  "extends": "../../tsconfig.json",
+  "include": [
+    "**/*.ts"
+  ]
+}

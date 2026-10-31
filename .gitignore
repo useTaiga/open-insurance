@@ -1,0 +1,11 @@
+node_modules/
+.venv/
+.env*
+.DS_Store
+*.pkpass
+*.pem
+*.p12
+*.p8
+*.sqlite*
+captures/
+private/

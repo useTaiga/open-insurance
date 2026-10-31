@@ -1,0 +1,16 @@
+{
+  "generator": "Python cryptography X963KDF and AESGCM; synthetic private scalars 1 and 2",
+  "passTypeIdentifier": "pass.org.openinsurance.test",
+  "message": "ic1_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "timestamp": "2026-10-31T19:00:00Z",
+  "cryptograms": [
+    {
+      "method": 1,
+      "cryptogramHex": "405770917cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978e7531678ed8825153a3165a41c57d8c04baa7563aa54c8b276f1a5f749dee2a60fce53aff78222340c535c31738d791ddc2a729d505bb59b"
+    },
+    {
+      "method": 2,
+      "cryptogramHex": "405770917cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc47669978d631f9e8b2702e35f34d84ea4c35c0feb01cd141f0c1a2c79e516368f2309034940935a0707515e06dcfd8670c2fbcec35ac07cd1df9a1f3"
+    }
+  ]
+}
